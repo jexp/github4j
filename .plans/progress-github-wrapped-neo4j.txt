@@ -327,3 +327,34 @@ Key Decisions:
   stores in in-memory projected graph (used for distribution analysis first)
 
 Next Task: task-012 (Build GDS notebook: PageRank, team comparison, and neo4j-viz visualisation)
+================================================================================
+TASK-012: Build GDS notebook: PageRank, team comparison, and neo4j-viz visualisation
+Date: 2026-03-26T05:00:00Z
+================================================================================
+Summary: Extended notebooks/github_gds.ipynb with 4 new sections (sections 7–10)
+before the cleanup cells: PageRank to identify central reviewers; majority-label
+accuracy comparison of GDS communities vs GitHub team labels; neo4j-viz
+VisualizationGraph render of the collaboration graph coloured by community; and
+CSV export to community_assignments.csv. Previous sections 1–6 (Louvain) retained
+unchanged. Total notebook now has 27 code cells and 12 markdown cells.
+
+Files Changed:
+- notebooks/github_gds.ipynb (modified — added sections 7–10 with PageRank, team
+  comparison, neo4j-viz visualisation, CSV export; section numbering shifted;
+  cleanup is now section 11)
+
+Key Decisions:
+- neo4j-viz Relationship uses source/target (not start_node/end_node) — verified
+  against PyPI docs for neo4j-viz 1.3.0; fixed after initial write
+- PageRank uses gds.pageRank.mutate (in-memory) + gds.pageRank.stream (to get
+  scores into a DataFrame); nodeId resolved to login via a separate Cypher query
+- Team labels: first tries 'team-' or 'team/' prefix; falls back to any label if
+  none found — handles repos that don't use team-prefixed label conventions
+- Majority-label accuracy computed per community (only communities with ≥2 labelled
+  members); prints human-readable "X% of N members share 'label'" summary
+- community_assignments.csv written to cwd (notebooks/ when run in Jupyter) with
+  columns: login, community, pagerank_score — sorted by community then pagerank DESC
+- overlap_df may be empty (if no team labels in the dataset) — legend cell handles
+  this gracefully with fallback to unique_communities list
+
+Next Task: task-013 (Build MCP server with Neo4j query tools)

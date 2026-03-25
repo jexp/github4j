@@ -205,7 +205,7 @@ tasks:
       (e.g. Jaccard or majority-label accuracy per community); and a neo4j-viz VisualizationGraph
       rendering the community graph coloured by community. Export community assignments to
       notebooks/community_assignments.csv.
-    status: pending
+    status: completed
     dependencies:
       - task-011
     acceptance_criteria:
@@ -214,7 +214,7 @@ tasks:
       - "Overlap metric printed with explanation (e.g. '72% of community 3 members share team-kernel label')"
       - "neo4j-viz graph renders inline in notebook with nodes coloured by community"
       - "community_assignments.csv exported with columns: login, community, pagerank_score"
-    completed_at: null
+    completed_at: "2026-03-26T05:00:00Z"
 
   - id: task-013
     title: "Build MCP server with Neo4j query tools"

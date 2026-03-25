@@ -144,3 +144,12 @@ This applies especially to NVL, neo4j-rust-ext, uv, and any other tool the user 
 - `louvain.write()` re-runs Louvain and writes to AuraDB; `louvain.mutate()` stores only in-memory
 - For undirected Cypher projection: use `WHERE id(a) < id(b)` to avoid duplicate pairs + `undirectedRelationshipTypes` in dataConfig
 - No `python-dotenv` needed: use inline `_load_env_file()` helper scanning cwd and parent for integration.env
+
+## GDS notebook pattern (task-012)
+- PageRank API: `gds.pageRank.mutate(G, mutateProperty='pagerank', relationshipWeightProperty='weight', dampingFactor=0.85, maxIterations=20)` then `gds.pageRank.stream(G, ...)` to get scores as DataFrame
+- PageRank stream returns `nodeId` + `score`; resolve nodeId → login via separate `gds.run_cypher("MATCH (p:Person) RETURN id(p) AS nodeId, p.login AS login")`
+- **neo4j-viz Relationship uses `source`/`target` (not `start_node`/`end_node`)** — verify against PyPI docs; mandatory fields are `source` and `target` only
+- neo4j-viz Node mandatory field: `id`; optional: `caption`, `color`, `size`
+- neo4j-viz 1.3.0 (current as of Mar 2026): `from neo4j_viz import Node, Relationship, VisualizationGraph`; render with `VisualizationGraph(nodes=nodes, relationships=rels).show()`
+- Majority-label team comparison: query `AUTHORED→PR→HAS_LABEL` with `l.name STARTS WITH 'team-'`; fallback to any label if 0 results; compute per-community accuracy as `majority_count / labelled_size`
+- NotebookEdit tool required for editing .ipynb files — `Edit` tool will error with "use NotebookEdit" if you try it on a notebook
