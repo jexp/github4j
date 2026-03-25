@@ -9,11 +9,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;800;900&display=swap" rel="stylesheet" />
 
-  <!-- Import map: resolves @neo4j-nvl/base to the bundled ESM on unpkg -->
+  <!-- Import map: ?bundle inlines all transitive deps into one file, no bare specifiers leak -->
   <script type="importmap">
   {
     "imports": {
-      "@neo4j-nvl/base": "https://unpkg.com/@neo4j-nvl/base@1.1.0/dist/base.mjs"
+      "@neo4j-nvl/base": "https://esm.sh/@neo4j-nvl/base@1.1.0?bundle"
     }
   }
   </script>
