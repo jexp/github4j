@@ -9,18 +9,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;800;900&display=swap" rel="stylesheet" />
 
-  <!-- Import map: ?bundle inlines all transitive deps into one file, no bare specifiers leak -->
-  <script type="importmap">
-  {
-    "imports": {
-      "@neo4j-nvl/base": "https://esm.sh/@neo4j-nvl/base@1.1.0?bundle"
-    }
-  }
-  </script>
-
-  <!-- NVL module shim: imports the ESM, exposes initNVLGraph on window -->
+  <!-- NVL: import directly from esm.sh WITHOUT ?bundle — esm.sh rewrites all bare
+       specifiers (including @neo4j-nvl/layout-workers) to absolute esm.sh URLs
+       internally, so the browser resolves them without an importmap. -->
   <script type="module">
-    import { NVL } from '@neo4j-nvl/base';
+    import { NVL } from 'https://esm.sh/@neo4j-nvl/base@1.1.0';
 
     /**
      * Build a force-directed NVL graph in #collab-graph.
