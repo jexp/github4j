@@ -9,91 +9,82 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;800;900&display=swap" rel="stylesheet" />
 
-  <!-- Import map: ?bundle inlines all transitive deps into one file, no bare specifiers leak -->
-  <script type="importmap">
-  {
-    "imports": {
-      "@neo4j-nvl/base": "https://esm.sh/@neo4j-nvl/base@1.1.0?bundle"
-    }
-  }
-  </script>
-
-  <!-- NVL module shim: imports the ESM, exposes initNVLGraph on window -->
-  <script type="module">
-    import { NVL } from '@neo4j-nvl/base';
-
+  <!-- vis-network: single UMD bundle, battle-tested pan/zoom/hover, no bundler needed -->
+  <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+  <script>
     /**
-     * Build a force-directed NVL graph in #collab-graph.
-     * nodes: [{id, login, role, size}]  (role: 'author'|'reviewer')
+     * Build a force-directed vis-network graph in #collab-graph.
+     * nodes: [{id, login, role, size}]
      * edges: [{id, from, to, count}]
      */
     window.initNVLGraph = function initNVLGraph(nodes, edges) {
       const container = document.getElementById('collab-graph');
-      container.innerHTML = ''; // clear placeholder
+      container.innerHTML = '';
 
-      // Map node id → size for capping
       const maxSize = Math.max(...nodes.map(n => n.size), 1);
 
-      const nvlNodes = nodes.map(n => ({
+      const visNodes = new vis.DataSet(nodes.map(n => ({
         id: n.id,
-        caption: n.login,
-        size: 8 + (n.size / maxSize) * 24, // scale 8–32px
-        color: n.role === 'author' ? '#58a6ff' : '#56d364',
-      }));
+        label: n.login,
+        size: 10 + (n.size / maxSize) * 22,
+        color: {
+          background: n.role === 'author' ? '#1f3a5f' : '#1a3d2b',
+          border:     n.role === 'author' ? '#58a6ff' : '#56d364',
+          highlight:  { background: n.role === 'author' ? '#2d5a9e' : '#2d6b47', border: n.role === 'author' ? '#79baff' : '#7ae890' },
+          hover:      { background: n.role === 'author' ? '#2d5a9e' : '#2d6b47', border: n.role === 'author' ? '#79baff' : '#7ae890' },
+        },
+        font: { color: '#e6edf3', size: 12, face: 'SFMono-Regular, Consolas, monospace' },
+        borderWidth: 2,
+        shape: 'dot',
+      })));
 
-      const nvlRels = edges.map(e => ({
+      const visEdges = new vis.DataSet(edges.map(e => ({
         id: e.id,
         from: e.from,
         to: e.to,
-        caption: String(e.count),
-        width: 1 + Math.min(e.count / 5, 8),
-        color: '#30363d',
-      }));
+        label: String(e.count),
+        width: 1 + Math.min(e.count / 5, 6),
+        color: { color: '#30363d', highlight: '#58a6ff', hover: '#58a6ff' },
+        font: { color: '#8b949e', size: 10, align: 'middle' },
+        smooth: { type: 'curvedCW', roundness: 0.2 },
+        arrows: { to: { enabled: true, scaleFactor: 0.5 } },
+      })));
+
+      const network = new vis.Network(container, { nodes: visNodes, edges: visEdges }, {
+        physics: {
+          solver: 'forceAtlas2Based',
+          forceAtlas2Based: { gravitationalConstant: -60, springLength: 120 },
+          stabilization: { iterations: 150 },
+        },
+        interaction: {
+          hover: true,
+          tooltipDelay: 0,
+          zoomView: true,
+          dragView: true,
+          zoomSpeed: 0.5,
+          // Require Ctrl/Cmd for zoom so plain scroll scrolls the page
+          navigationButtons: false,
+        },
+        layout: { improvedLayout: false },
+      });
+
+      // Ctrl/Cmd + scroll → zoom; plain scroll → page scrolls
+      container.addEventListener('wheel', (e) => {
+        if (!e.ctrlKey && !e.metaKey) e.stopImmediatePropagation();
+      }, { passive: true, capture: true });
 
       const tooltip = document.getElementById('nvl-tooltip');
+      network.on('hoverNode', (params) => {
+        const node = visNodes.get(params.node);
+        tooltip.textContent = node ? node.label : params.node;
+        tooltip.style.display = 'block';
+        tooltip.style.left = (params.event.clientX + 14) + 'px';
+        tooltip.style.top  = (params.event.clientY + 14) + 'px';
+      });
+      network.on('blurNode',  () => { tooltip.style.display = 'none'; });
+      network.on('dragStart', () => { tooltip.style.display = 'none'; });
 
-      const nvl = new NVL(
-        container,
-        nvlNodes,
-        nvlRels,
-        {
-          layout: 'forceDirected',
-          disableTelemetry: true,
-          initialZoom: 0.6,
-          minZoom: 0.1,
-          maxZoom: 4,
-          // NVL built-in mouse callbacks — more reliable than getHits()
-          mouseoverNode: (node, rawEvent) => {
-            tooltip.textContent = (node && (node.caption || node.id)) || '';
-            tooltip.style.display = 'block';
-            if (rawEvent) {
-              tooltip.style.left = (rawEvent.clientX + 14) + 'px';
-              tooltip.style.top  = (rawEvent.clientY + 14) + 'px';
-            }
-          },
-          mouseoutNode: () => {
-            tooltip.style.display = 'none';
-          },
-          onPan: () => { tooltip.style.display = 'none'; },
-          onZoom: () => { tooltip.style.display = 'none'; },
-        }
-      );
-
-      // fit() centers nodes and triggers proper canvas sizing
-      try { nvl.fit(); } catch(_) {}
-
-      // Ctrl/Cmd + scroll to zoom; plain scroll lets the page scroll normally.
-      // NVL's own wheel handler runs after ours — we stopPropagation on plain scroll
-      // so NVL never sees it and the page scrolls instead.
-      container.addEventListener('wheel', (e) => {
-        if (e.ctrlKey || e.metaKey) {
-          e.preventDefault(); // hand full control to NVL for zoom
-        } else {
-          e.stopImmediatePropagation(); // block NVL zoom; page scrolls normally
-        }
-      }, { passive: false });
-
-      window._nvlInstance = nvl;
+      window._nvlInstance = network;
     };
 
     window._nvlReady = true;
