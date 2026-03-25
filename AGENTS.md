@@ -51,3 +51,15 @@ For HTML/JS: Open in browser and check console for errors.
 - Rels: ~507,277 — EXCEEDS 400k Free tier limit by ~107k
 - Culprit: TOUCHES (206,196 from files_touched.csv)
 - Solution: Either paid AuraDB tier, or skip/limit files_touched import (hero stats don't need TOUCHES)
+
+## Neo4j Duration Gotchas
+
+- `duration.between(d1, d2).hours` — hours component of Duration (can be 0-23, NOT total hours)
+- `duration.between(d1, d2).seconds` — seconds component (0-59, NOT total seconds)
+- For total elapsed hours: `duration.inSeconds(d1, d2).seconds / 3600.0`
+- `duration.inSeconds()` returns a Duration where `.seconds` IS total elapsed seconds
+
+## Cypher Pattern Scope Gotcha
+
+- `WHERE NOT ()-[:REL]->()` is a GLOBAL pattern check (always true/false for entire graph)
+- To scope to a bound node: `WHERE NOT ()-[:REL]->(p)` or `WHERE NOT (p)-[:REL]->()`

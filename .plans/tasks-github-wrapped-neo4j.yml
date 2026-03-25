@@ -45,7 +45,7 @@ tasks:
       Checks include: node counts per label, relationship counts per type, sample path
       traversals (e.g. person→PR→file), and the hero stat queries (Great Deleter, Bug Slayer)
       returning non-empty results.
-    status: pending
+    status: completed
     dependencies:
       - task-002
     acceptance_criteria:
@@ -53,7 +53,7 @@ tasks:
       - "Great Deleter query returns at least 5 results with non-zero deletions"
       - "Bug Slayer query returns results (bug-labelled merged PRs exist in data)"
       - "Collaboration pairs query (AUTHORED + REVIEWED same PR) returns results"
-    completed_at: null
+    completed_at: "2026-03-25T15:00:00Z"
 
   - id: task-004
     title: "Build Aura Dashboard JSON configuration"

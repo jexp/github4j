@@ -60,3 +60,30 @@ Key Decisions:
   analytics (review count queries use CSV row counts anyway)
 
 Next Task: task-003 (Verify import with sanity-check Cypher queries)
+
+================================================================================
+TASK-003: Verify import with sanity-check Cypher queries
+Date: 2026-03-25T15:00:00Z
+================================================================================
+
+Summary:
+Created import/verify.cypher with 9 sections of post-import verification queries
+covering node counts per label, relationship counts per type, sample path traversals,
+both hero stat queries (Great Deleter, Bug Slayer), collaboration pairs, all 7
+supporting stat queries, data integrity checks, and AuraDB Free tier scale checks.
+
+Files Changed:
+- import/verify.cypher (created): 229-line verification script with expected value
+  comments throughout; 25+ individual Cypher queries covering all acceptance criteria.
+
+Key Decisions:
+- Removed APOC dynamic query for label summary (AuraDB compatibility — APOC may not
+  be installed; individual MATCH/RETURN count queries used instead)
+- Fixed inactive-person pattern: used `NOT ()-[:AUTHORED]->(p)` (scoped to node p)
+  rather than the incorrect unscoped `NOT ()-[:AUTHORED]->()`
+- Used `duration.inSeconds(d1, d2).seconds / 3600.0` for PR velocity hours calculation
+  (avoids `.hours` component ambiguity on Duration objects; inSeconds gives true total)
+- TOUCHES-dependent queries (hottest files/dirs, 3e) noted as requiring
+  06_files_touched.cypher to have been run — acceptable if skipped for Free tier
+
+Next Task: task-004 (Build Aura Dashboard JSON configuration)
