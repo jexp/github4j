@@ -69,7 +69,11 @@
 
       container.addEventListener('pointermove', (evt) => {
         const hits = nvl.getHits(evt);
-        const nodeHit = hits && hits.nvlTargets && hits.nvlTargets.find(t => t.type === 'node');
+        // nvlTargets may be a Set or array depending on NVL version — normalise to array
+        let targets = [];
+        if (Array.isArray(hits)) targets = hits;
+        else if (hits && hits.nvlTargets) targets = Array.from(hits.nvlTargets);
+        const nodeHit = targets.find(t => t.type === 'node');
         if (nodeHit) {
           const caption = nodeHit.element && (nodeHit.element.data && nodeHit.element.data.caption
                           || nodeHit.element.caption || nodeHit.element.id);
