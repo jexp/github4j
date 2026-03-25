@@ -168,14 +168,14 @@ tasks:
       Configure the repository so the web app in docs/ is served via GitHub Pages over HTTPS.
       Verify that the AuraDB HTTP API is reachable from the GitHub Pages origin (CORS check).
       Document the public URL and any required AuraDB CORS allowlist configuration.
-    status: pending
+    status: completed
     dependencies:
       - task-009
     acceptance_criteria:
       - "GitHub Pages HTTPS URL is publicly accessible"
       - "All stat sections load with real data (no CORS errors in browser console)"
       - "Public URL documented in README"
-    completed_at: null
+    completed_at: "2026-03-25T17:30:00Z"
 
   - id: task-011
     title: "Build GDS notebook: graph projection and Louvain community detection"

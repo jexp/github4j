@@ -55,7 +55,13 @@ cd docs && python3 -m http.server 8080
 
 Enter your AuraDB **Bolt URI** (`neo4j+s://...`) on first load — stored in `localStorage`, never committed.
 
-Or deploy to GitHub Pages: Settings → Pages → Source: `docs/` folder. The app uses the **Neo4j JS driver over WebSocket (Bolt)** so there are no CORS issues. 🎉
+Or open the live demo:
+
+> **🌐 Live demo: [https://www.jexp.de/github4j/](https://www.jexp.de/github4j/)**
+
+The app uses the **Neo4j JS driver over WebSocket (Bolt)**, so there are no CORS issues — Bolt runs over `wss://` (WebSocket), which is not subject to the HTTP CORS policy. No AuraDB allowlist configuration is needed. 🎉
+
+To host your own fork on GitHub Pages: Settings → Pages → Source: `docs/` folder, branch `main`.
 
 ### 4. 📊 Load the NeoDash dashboard
 

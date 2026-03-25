@@ -270,3 +270,27 @@ Key Decisions:
 - Graph container height increased from 520px to 560px to fill wider layout better.
 
 Next Task: task-010 (Deploy web app to GitHub Pages)
+================================================================================
+TASK-010: Deploy web app to GitHub Pages
+Date: 2026-03-25T17:30:00Z
+================================================================================
+Summary: GitHub Pages was already configured (source: docs/ on main branch) and
+the site was live at https://www.jexp.de/github4j/. Added docs/.nojekyll to
+prevent Jekyll processing, and updated README.md to document the public URL and
+clarify that Bolt/WebSocket bypasses CORS (no AuraDB allowlist configuration
+needed).
+
+Files Changed:
+- docs/.nojekyll (created — empty file preventing Jekyll processing on GitHub Pages)
+- README.md (modified — added live demo URL, CORS explanation, fork instructions)
+- .plans/tasks-github-wrapped-neo4j.yml (modified — task-010 status set to completed)
+
+Key Decisions:
+- App uses Neo4j JS driver (Bolt over wss://) not HTTP REST, so there are zero
+  CORS issues — no AuraDB HTTP API allowlist configuration is needed at all
+- .nojekyll file prevents GitHub Pages Jekyll from mangling the single-file HTML
+  app (important if any Jekyll-sensitive patterns appear in the HTML/CSS)
+- Public URL is https://www.jexp.de/github4j/ (custom domain, HTTPS enforced,
+  cert expires 2026-05-19) — verified 200 OK via curl
+
+Next Task: task-011 (Build GDS notebook: graph projection and Louvain community detection)

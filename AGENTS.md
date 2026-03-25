@@ -121,3 +121,10 @@ For HTML/JS: Open in browser and check console for errors.
 - PR velocity: `WHERE pr.state = 'MERGED'` excludes unmerged; `mergedCount >= 3` filter prevents outliers; display as `Xh` if < 24h else `Xd`
 - Label leaderboard renders an inline bar chart (width % relative to max) — more visual than a plain table
 - All 7 functions fired in parallel from `loadDashboard()` (no await) — sections update independently
+
+## GitHub Pages deployment (task-010)
+- Public URL: https://www.jexp.de/github4j/ (custom domain, HTTPS enforced, source: docs/ on main branch)
+- Add `docs/.nojekyll` (empty file) to prevent Jekyll from processing the single-file HTML app
+- App uses Neo4j JS driver Bolt over `wss://` — Bolt/WebSocket is NOT subject to HTTP CORS policy
+- No AuraDB allowlist configuration needed; CORS notes are irrelevant for Bolt connections
+- Verify GitHub Pages config via: `gh api repos/{owner}/{repo}/pages` — shows build status, html_url, source
