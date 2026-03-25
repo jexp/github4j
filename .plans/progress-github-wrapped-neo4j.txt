@@ -148,3 +148,32 @@ Key Decisions:
 - No external JS dependencies in scaffold — NVL CDN load deferred to task-008
 
 Next Task: task-006 (Implement hero stat sections: Great Deleter and Bug Slayer)
+================================================================================
+TASK-006: Implement hero stat sections: Great Deleter and Bug Slayer
+Date: 2026-03-25T21:00:00Z
+================================================================================
+
+Summary:
+Implemented the two hero stat sections in docs/index.html. Great Deleter queries
+TOUCHES relationships to find top line-deleters; Bug Slayer queries HAS_LABEL+MERGED
+PRs to find top bug-fix contributors. Both render a large Wrapped-style hero number
+for #1 plus a ranked table for positions 2-10, with graceful empty-state fallbacks.
+
+Files Changed:
+- docs/index.html (modified): Added loadGreatDeleter() and loadBugSlayer() async
+  functions; added .hero-number-block/.hero-rank/.hero-login/.hero-big-number/
+  .hero-label CSS classes; updated loadDashboard() to call both hero stat functions
+  and remove their placeholder entries from the pending sections list.
+
+Key Decisions:
+- Great Deleter uses TOUCHES rels (from 06_files_touched.cypher); if TOUCHES not
+  imported (AuraDB Free tier workaround), query returns 0 rows and a friendly
+  notice is shown with instructions to import the file
+- Bug Slayer uses toLower(l.name) = 'bug' for case-insensitive label matching
+  since label casing can vary across repos
+- Both queries call safeQuery(cypher, {}) — no user-supplied values in Cypher,
+  so the empty params object satisfies the "no string interpolation" requirement
+- hero-big-number uses clamp(3.5rem, 8vw, 5.5rem) to scale down on narrow screens
+- All login values run through escapeHtml() before innerHTML insertion
+
+Next Task: task-007 (Implement supporting stats cards — 7 sections)

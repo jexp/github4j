@@ -98,7 +98,7 @@ tasks:
       contributors by total lines deleted across all their PRs. Bug Slayer shows contributors
       ranked by count of merged PRs with the 'bug' label. Both sections use large Wrapped-style
       number display with the contributor's GitHub login and rank.
-    status: pending
+    status: completed
     dependencies:
       - task-005
     acceptance_criteria:
@@ -106,7 +106,7 @@ tasks:
       - "Bug Slayer section renders top 10 contributors with bug-fix PR counts"
       - "Both sections animate in on load (CSS transition)"
       - "Queries are parameterised (no string interpolation)"
-    completed_at: null
+    completed_at: "2026-03-25T21:00:00Z"
 
   - id: task-007
     title: "Implement supporting stats cards (7 sections)"

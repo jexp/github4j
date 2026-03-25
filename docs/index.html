@@ -360,6 +360,46 @@
       font-weight: 600;
     }
 
+    /* ===== Hero Number Block (Great Deleter / Bug Slayer) ===== */
+    .hero-number-block {
+      text-align: center;
+      padding: 1.5rem 1rem 1rem;
+    }
+
+    .hero-rank {
+      font-size: 0.875rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+    }
+
+    .hero-login {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-big-number {
+      font-size: clamp(3.5rem, 8vw, 5.5rem);
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      font-family: var(--font-mono);
+      margin-bottom: 0.4rem;
+    }
+
+    .hero-label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+    }
+
     /* ===== Graph Visualisation Container ===== */
     #collab-graph-container {
       background: var(--surface);
@@ -842,18 +882,146 @@
     }
 
     // ==========================================================================
-    // DASHBOARD LOADING — placeholder stubs, implemented in later tasks
+    // HERO STAT: GREAT DELETER
+    // Top 10 contributors by total lines deleted across all their PRs (via TOUCHES rels)
+    // Falls back gracefully if TOUCHES relationships have not been imported.
+    // ==========================================================================
+
+    async function loadGreatDeleter() {
+      const containerId = 'deleter-content';
+      setLoading(containerId);
+
+      const cypher = `
+        MATCH (p:Person)-[:AUTHORED]->(pr:PullRequest)-[t:TOUCHES]->(:File)
+        WHERE t.deletions IS NOT NULL
+        WITH p.login AS login, SUM(toInteger(t.deletions)) AS totalDeleted
+        WHERE totalDeleted > 0
+        RETURN login, totalDeleted
+        ORDER BY totalDeleted DESC
+        LIMIT 10
+      `;
+
+      const rows = await safeQuery(cypher, {});
+
+      if (!rows) {
+        setError(containerId, 'Failed to load Great Deleter stats.');
+        return;
+      }
+
+      if (rows.length === 0) {
+        // TOUCHES rels not imported — show a friendly notice
+        document.getElementById(containerId).innerHTML = `
+          <div class="loading-placeholder" style="color:var(--muted)">
+            <div style="font-size:1.5rem;margin-bottom:0.5rem">🗑</div>
+            <div>No file-touch data available.<br>
+            <small>Import <code>06_files_touched.cypher</code> to enable this stat.</small></div>
+          </div>`;
+        return;
+      }
+
+      // Render hero number for #1 + ranked table for the rest
+      const top = rows[0];
+      const rest = rows.slice(1);
+
+      const tableRows = rest.map((row, i) => `
+        <tr>
+          <td class="rank">#${i + 2}</td>
+          <td class="login">${escapeHtml(row.login)}</td>
+          <td class="stat-value" style="color:var(--accent2)">${Number(row.totalDeleted).toLocaleString()}</td>
+        </tr>`).join('');
+
+      document.getElementById(containerId).innerHTML = `
+        <div class="hero-number-block">
+          <div class="hero-rank">#1</div>
+          <div class="hero-login">${escapeHtml(top.login)}</div>
+          <div class="hero-big-number" style="color:var(--accent2)">${Number(top.totalDeleted).toLocaleString()}</div>
+          <div class="hero-label">lines deleted</div>
+        </div>
+        ${rest.length > 0 ? `
+        <table class="stat-table" style="margin-top:1.5rem">
+          <thead><tr>
+            <th>Rank</th><th>Contributor</th><th style="text-align:right">Lines Deleted</th>
+          </tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>` : ''}
+      `;
+    }
+
+    // ==========================================================================
+    // HERO STAT: BUG SLAYER
+    // Top 10 contributors by count of merged PRs with the 'bug' label
+    // ==========================================================================
+
+    async function loadBugSlayer() {
+      const containerId = 'bugslayer-content';
+      setLoading(containerId);
+
+      const cypher = `
+        MATCH (p:Person)-[:AUTHORED]->(pr:PullRequest)-[:HAS_LABEL]->(l:Label)
+        WHERE pr.state = 'MERGED' AND toLower(l.name) = 'bug'
+        WITH p.login AS login, COUNT(DISTINCT pr) AS bugFixes
+        RETURN login, bugFixes
+        ORDER BY bugFixes DESC
+        LIMIT 10
+      `;
+
+      const rows = await safeQuery(cypher, {});
+
+      if (!rows) {
+        setError(containerId, 'Failed to load Bug Slayer stats.');
+        return;
+      }
+
+      if (rows.length === 0) {
+        document.getElementById(containerId).innerHTML = `
+          <div class="loading-placeholder" style="color:var(--muted)">
+            <div style="font-size:1.5rem;margin-bottom:0.5rem">🐛</div>
+            <div>No merged bug-labelled PRs found in the data.</div>
+          </div>`;
+        return;
+      }
+
+      const top = rows[0];
+      const rest = rows.slice(1);
+
+      const tableRows = rest.map((row, i) => `
+        <tr>
+          <td class="rank">#${i + 2}</td>
+          <td class="login">${escapeHtml(row.login)}</td>
+          <td class="stat-value" style="color:var(--accent3)">${Number(row.bugFixes).toLocaleString()}</td>
+        </tr>`).join('');
+
+      document.getElementById(containerId).innerHTML = `
+        <div class="hero-number-block">
+          <div class="hero-rank">#1</div>
+          <div class="hero-login">${escapeHtml(top.login)}</div>
+          <div class="hero-big-number" style="color:var(--accent3)">${Number(top.bugFixes).toLocaleString()}</div>
+          <div class="hero-label">bug PRs merged</div>
+        </div>
+        ${rest.length > 0 ? `
+        <table class="stat-table" style="margin-top:1.5rem">
+          <thead><tr>
+            <th>Rank</th><th>Contributor</th><th style="text-align:right">Bug PRs Merged</th>
+          </tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>` : ''}
+      `;
+    }
+
+    // ==========================================================================
+    // DASHBOARD LOADING
     // ==========================================================================
 
     async function loadDashboard() {
       // Make all sections visible immediately via IntersectionObserver nudge
       document.querySelectorAll('.section').forEach(s => s.classList.add('visible'));
 
-      // Each stat section is implemented in later tasks (task-006, task-007, task-008).
-      // For now, show a "ready" placeholder so the scaffold is testable end-to-end.
-      const sections = [
-        'deleter-content',
-        'bugslayer-content',
+      // Hero stats (task-006)
+      loadGreatDeleter();
+      loadBugSlayer();
+
+      // Supporting stats — placeholder stubs (task-007)
+      const pendingSections = [
         'contributors-content',
         'reviewers-content',
         'files-content',
@@ -863,11 +1031,11 @@
         'labels-content',
       ];
 
-      for (const id of sections) {
+      for (const id of pendingSections) {
         document.getElementById(id).innerHTML = `
           <div class="loading-placeholder" style="color:var(--accent3)">
             <div style="font-size:1.25rem;margin-bottom:0.5rem">✓</div>
-            <div>Connected to AuraDB. Stats will load here (task-006 / task-007).</div>
+            <div>Connected to AuraDB. Stats will load here (task-007).</div>
           </div>`;
       }
 

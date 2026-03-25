@@ -88,3 +88,11 @@ For HTML/JS: Open in browser and check console for errors.
 - Neo4j HTTP response format: `payload.results[0].columns` + `data[].row` — de-pivot with `columns.forEach((col,i) => obj[col] = row.row[i])`
 - NVL graph div (`#collab-graph`) has explicit `height: 520px` on container — required for NVL to render (task-008)
 - Section reveal: IntersectionObserver (threshold 0.08) adds `.visible` class → CSS opacity+translateY transition
+
+## Hero stat pattern (task-006+)
+- Hero sections use `.hero-number-block` → `.hero-rank` / `.hero-login` / `.hero-big-number` / `.hero-label` CSS layout
+- `hero-big-number` uses `clamp(3.5rem, 8vw, 5.5rem)` monospace font for the large stat number
+- Always use `escapeHtml()` before inserting any user-data (logins, label names) into innerHTML
+- Great Deleter: uses TOUCHES rels — if not imported, query returns 0 rows → show friendly notice (not an error)
+- Bug Slayer: `toLower(l.name) = 'bug'` for case-insensitive label match; `COUNT(DISTINCT pr)` avoids double-counting
+- `loadDashboard()` calls `s.classList.add('visible')` on all sections immediately after login — hero stat fns fire in parallel via `loadGreatDeleter(); loadBugSlayer();` (not awaited)
