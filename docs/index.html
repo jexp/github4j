@@ -82,6 +82,33 @@
       // fit() centers nodes and triggers proper canvas sizing
       try { nvl.fit(); } catch(_) {}
 
+      // Click-to-activate: overlay → graph captures scroll; Esc/exit → release
+      const graphContainer = document.getElementById('collab-graph-container');
+      const overlay        = document.getElementById('collab-graph-overlay');
+      const exitBtn        = document.getElementById('collab-graph-exit');
+
+      function activateGraph() {
+        graphContainer.classList.add('graph-active');
+        // Prevent wheel events from scrolling the page while inside the graph
+        container.addEventListener('wheel', consumeWheel, { passive: false });
+      }
+      function deactivateGraph() {
+        graphContainer.classList.remove('graph-active');
+        container.removeEventListener('wheel', consumeWheel);
+        tooltip.style.display = 'none';
+      }
+      function consumeWheel(e) { e.stopPropagation(); }
+
+      overlay.addEventListener('click', activateGraph);
+      exitBtn.addEventListener('click', deactivateGraph);
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') deactivateGraph();
+      });
+      // Click outside the container deactivates
+      document.addEventListener('pointerdown', e => {
+        if (!graphContainer.contains(e.target)) deactivateGraph();
+      });
+
       window._nvlInstance = nvl;
     };
 
@@ -639,11 +666,59 @@
     #collab-graph {
       width: 100%;
       height: 100%;
-      touch-action: none;   /* PixiJS needs this — prevents browser scroll-capture on wheel/pointer */
-      cursor: grab;
+      touch-action: none;
     }
 
-    #collab-graph:active { cursor: grabbing; }
+    /* Click-to-activate overlay — sits above the graph until user clicks in */
+    #collab-graph-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      background: rgba(13, 17, 23, 0.55);
+      backdrop-filter: blur(2px);
+      cursor: pointer;
+      border-radius: 16px;
+      transition: opacity 0.2s;
+    }
+
+    #collab-graph-overlay .overlay-icon { font-size: 2rem; }
+    #collab-graph-overlay .overlay-label {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.02em;
+    }
+    #collab-graph-overlay .overlay-hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    /* When graph is "active", overlay is gone and graph captures scroll */
+    #collab-graph-container.graph-active #collab-graph-overlay { display: none; }
+    #collab-graph-container.graph-active #collab-graph { cursor: grab; }
+    #collab-graph-container.graph-active #collab-graph:active { cursor: grabbing; }
+
+    /* Exit pill shown while active */
+    #collab-graph-exit {
+      display: none;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 20;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 0.25rem 0.75rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    #collab-graph-container.graph-active #collab-graph-exit { display: block; }
 
     /* ===== NVL Tooltip ===== */
     #nvl-tooltip {
@@ -897,11 +972,17 @@
         </div>
         <div id="collab-graph-container">
           <div id="collab-graph"></div>
+          <div id="collab-graph-overlay">
+            <span class="overlay-icon">🕸</span>
+            <span class="overlay-label">Click to interact</span>
+            <span class="overlay-hint">drag to pan · scroll to zoom · hover for name</span>
+          </div>
+          <button id="collab-graph-exit" title="Exit graph interaction (Esc)">✕ Exit</button>
         </div>
         <div id="collab-graph-legend">
           <span><span class="legend-dot" style="background:#58a6ff"></span>Author</span>
           <span><span class="legend-dot" style="background:#56d364"></span>Reviewer</span>
-          <span style="margin-left:auto;font-size:0.75rem">Pan &amp; zoom — hover node for login</span>
+          <span style="margin-left:auto;font-size:0.75rem">Click graph to interact</span>
         </div>
       </section>
 
