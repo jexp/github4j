@@ -1614,18 +1614,23 @@
           <div>Loading collaboration graph…</div>
         </div>`;
 
-      // Minimal topology query: only elementId + labels + caption (login), no heavy props.
-      // Embeddings and large text fields are excluded here; fetch on hover if needed.
-      // Pattern: n {.login, .url} — explicit allowlist keeps payload tiny.
+      // Minimal topology query — generic pattern: labels + elementId + coalesced caption + rel type.
+      // No properties beyond caption; embeddings and large text never hit the wire.
+      // On hover, fetch full node by elementId with n {.*, titleEmbedding: null}.
       const cypher = `
-        MATCH (author:Person)-[:AUTHORED]->(pr:PullRequest)<-[:REVIEWED]-(reviewer:Person)
-        WHERE author <> reviewer
-        WITH author, reviewer, COUNT(DISTINCT pr) AS interactions
+        MATCH (source:Person)-[:AUTHORED]->(pr:PullRequest)<-[:REVIEWED]-(target:Person)
+        WHERE source <> target
+        WITH source, target, COUNT(DISTINCT pr) AS interactions
         ORDER BY interactions DESC
         LIMIT 40
         RETURN
-          { elementId: elementId(author),   labels: labels(author),   properties: author   {.login, .url} } AS authorNode,
-          { elementId: elementId(reviewer), labels: labels(reviewer), properties: reviewer {.login, .url} } AS reviewerNode,
+          labels(source)  AS sourceLabels,
+          elementId(source) AS sourceId,
+          coalesce(source.title, source.name, source.login, '') AS sourceCaption,
+          'REVIEWED_BY'   AS relType,
+          labels(target)  AS targetLabels,
+          elementId(target) AS targetId,
+          coalesce(target.title, target.name, target.login, '') AS targetCaption,
           interactions
       `;
 
@@ -1641,30 +1646,28 @@
         return;
       }
 
-      // Build nodes + edges from query results
-      const personMap = {};   // login → {id, login, role, size}
+      // Build nodes + edges from topology rows
+      const personMap = {};   // elementId → {id, login, role, size}
       const edgeList = [];
 
       rows.forEach(row => {
-        const { authorNode, reviewerNode, interactions } = row;
-        const authorLogin   = authorNode.properties.login;
-        const reviewerLogin = reviewerNode.properties.login;
+        const { sourceId, sourceCaption, targetId, targetCaption, relType, interactions } = row;
 
-        if (!personMap[authorLogin]) {
-          personMap[authorLogin] = { id: authorLogin, login: authorLogin, role: 'author', size: 0 };
+        if (!personMap[sourceId]) {
+          personMap[sourceId] = { id: sourceId, login: sourceCaption, role: 'author', size: 0 };
         }
-        if (!personMap[reviewerLogin]) {
-          personMap[reviewerLogin] = { id: reviewerLogin, login: reviewerLogin, role: 'reviewer', size: 0 };
+        if (!personMap[targetId]) {
+          personMap[targetId] = { id: targetId, login: targetCaption, role: 'reviewer', size: 0 };
         }
 
         // Accumulate interaction counts for node sizing
-        personMap[authorLogin].size  += interactions;
-        personMap[reviewerLogin].size += interactions;
+        personMap[sourceId].size += interactions;
+        personMap[targetId].size += interactions;
 
         edgeList.push({
-          id: `${authorLogin}→${reviewerLogin}`,
-          from: authorLogin,
-          to: reviewerLogin,
+          id: `${sourceId}→${targetId}`,
+          from: sourceId,
+          to: targetId,
           count: interactions,
         });
       });
