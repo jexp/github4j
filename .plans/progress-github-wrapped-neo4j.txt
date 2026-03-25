@@ -205,3 +205,34 @@ Key Decisions:
 - All 7 functions use safeQuery() (spinner + error toast), not raw runQuery()
 
 Next Task: task-008 (Integrate NVL collaboration graph visualisation)
+================================================================================
+TASK-008: Integrate NVL collaboration graph visualisation
+Date: 2026-03-26T01:00:00Z
+================================================================================
+
+Summary:
+Integrated @neo4j-nvl/base into docs/index.html as an ESM module via importmap.
+Added loadCollabGraph() that queries top 40 author↔reviewer collaboration pairs
+from AuraDB, builds NVL node/edge arrays, and renders a force-directed interactive
+graph. Hover tooltips use native pointermove + getHits() API. Full fallback handling
+for NVL load failure and empty data.
+
+Files Changed:
+- docs/index.html (modified): Added <script type="importmap"> for @neo4j-nvl/base@1.1.0,
+  <script type="module"> exposing window.initNVLGraph via ESM import, CSS for
+  #nvl-tooltip and #collab-graph-legend, updated HTML section with legend and tooltip
+  DOM element, added loadCollabGraph() function, updated loadDashboard() to call it.
+
+Key Decisions:
+- @neo4j-nvl/base only ships an ESM bundle (base.mjs, 1.07MB) — no UMD build.
+  Used <script type="importmap"> + <script type="module"> bridge pattern to expose
+  NVL to the classic (non-module) main script via window.initNVLGraph.
+- HoverInteraction requires separate @neo4j-nvl/interaction-handlers package — avoided
+  this dep by using native pointermove + nvl.getHits(evt) for tooltip instead.
+- Node color encodes role (author=#58a6ff blue, reviewer=#56d364 green); size scales
+  linearly with total interaction count (8–32px range).
+- NVL readiness uses window._nvlReady flag + 'nvl-ready' CustomEvent + 8s fallback
+  timeout to handle slow CDN loads gracefully.
+- disableTelemetry: true set as required by acceptance criteria.
+
+Next Task: task-009 (Apply Wrapped-style visual design)

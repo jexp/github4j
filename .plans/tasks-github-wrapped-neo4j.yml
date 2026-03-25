@@ -132,7 +132,7 @@ tasks:
       (loaded via CDN or bundled). The panel visualises the top author↔reviewer collaboration
       pairs as nodes (persons) and edges (reviewed relationships), sized by interaction count.
       Container div must have explicit CSS height set.
-    status: pending
+    status: completed
     dependencies:
       - task-007
     acceptance_criteria:
@@ -141,7 +141,7 @@ tasks:
       - "Node size or colour encodes interaction count or role (author vs reviewer)"
       - "Graph is interactive: pan, zoom, hover shows login tooltip"
       - "Layout uses forceDirected with disableTelemetry: true"
-    completed_at: null
+    completed_at: "2026-03-26T01:00:00Z"
 
   - id: task-009
     title: "Apply Wrapped-style visual design"

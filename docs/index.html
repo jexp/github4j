@@ -4,6 +4,96 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GitHub Wrapped — Neo4j</title>
+
+  <!-- Import map: resolves @neo4j-nvl/base to the bundled ESM on unpkg -->
+  <script type="importmap">
+  {
+    "imports": {
+      "@neo4j-nvl/base": "https://unpkg.com/@neo4j-nvl/base@1.1.0/dist/base.mjs"
+    }
+  }
+  </script>
+
+  <!-- NVL module shim: imports the ESM, exposes initNVLGraph on window -->
+  <script type="module">
+    import { NVL } from '@neo4j-nvl/base';
+
+    /**
+     * Build a force-directed NVL graph in #collab-graph.
+     * nodes: [{id, login, role, size}]  (role: 'author'|'reviewer')
+     * edges: [{id, from, to, count}]
+     */
+    window.initNVLGraph = function initNVLGraph(nodes, edges) {
+      const container = document.getElementById('collab-graph');
+      container.innerHTML = ''; // clear placeholder
+
+      // Map node id → size for capping
+      const maxSize = Math.max(...nodes.map(n => n.size), 1);
+
+      const nvlNodes = nodes.map(n => ({
+        id: n.id,
+        caption: n.login,
+        size: 8 + (n.size / maxSize) * 24, // scale 8–32px
+        color: n.role === 'author' ? '#58a6ff' : '#56d364',
+      }));
+
+      const nvlRels = edges.map(e => ({
+        id: e.id,
+        from: e.from,
+        to: e.to,
+        caption: String(e.count),
+        width: 1 + Math.min(e.count / 5, 8),
+        color: '#30363d',
+      }));
+
+      const nvl = new NVL(
+        container,
+        nvlNodes,
+        nvlRels,
+        {
+          layout: 'forceDirected',
+          disableTelemetry: true,
+          initialZoom: 0.6,
+          minZoom: 0.1,
+          maxZoom: 4,
+        }
+      );
+
+      // Tooltip on hover — use getHits() with native pointer events
+      const tooltip = document.getElementById('nvl-tooltip');
+      let _hoveredNodeId = null;
+
+      container.addEventListener('pointermove', (evt) => {
+        const hits = nvl.getHits(evt);
+        const nodeHit = hits && hits.nvlTargets && hits.nvlTargets.find(t => t.type === 'node');
+        if (nodeHit) {
+          const caption = nodeHit.element && (nodeHit.element.data && nodeHit.element.data.caption
+                          || nodeHit.element.caption || nodeHit.element.id);
+          if (_hoveredNodeId !== nodeHit.element.id) {
+            _hoveredNodeId = nodeHit.element.id;
+            tooltip.textContent = caption || nodeHit.element.id;
+          }
+          tooltip.style.display = 'block';
+          tooltip.style.left = (evt.clientX + 14) + 'px';
+          tooltip.style.top  = (evt.clientY + 14) + 'px';
+        } else {
+          tooltip.style.display = 'none';
+          _hoveredNodeId = null;
+        }
+      });
+
+      container.addEventListener('pointerleave', () => {
+        tooltip.style.display = 'none';
+        _hoveredNodeId = null;
+      });
+
+      window._nvlInstance = nvl;
+    };
+
+    window._nvlReady = true;
+    window.dispatchEvent(new CustomEvent('nvl-ready'));
+  </script>
+
   <!-- Neo4j JS driver — uses Bolt over WebSocket, no CORS issues -->
   <script src="https://unpkg.com/neo4j-driver@5/lib/browser/neo4j-web.min.js"></script>
   <style>
@@ -418,6 +508,44 @@
       height: 100%;
     }
 
+    /* ===== NVL Tooltip ===== */
+    #nvl-tooltip {
+      display: none;
+      position: fixed;
+      z-index: 500;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.3rem 0.65rem;
+      font-size: 0.8125rem;
+      font-family: var(--font-mono);
+      color: var(--text);
+      pointer-events: none;
+      white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+
+    /* Legend for the NVL graph */
+    #collab-graph-legend {
+      display: flex;
+      gap: 1.25rem;
+      padding: 0.5rem 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.8125rem;
+      color: var(--muted);
+      background: var(--surface);
+      border-radius: 0 0 12px 12px;
+    }
+
+    .legend-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 0.35rem;
+      vertical-align: middle;
+    }
+
     /* ===== Footer ===== */
     footer {
       text-align: center;
@@ -618,7 +746,15 @@
       <div id="collab-graph-container">
         <div id="collab-graph"></div>
       </div>
+      <div id="collab-graph-legend">
+        <span><span class="legend-dot" style="background:#58a6ff"></span>Author</span>
+        <span><span class="legend-dot" style="background:#56d364"></span>Reviewer</span>
+        <span style="margin-left:auto;font-size:0.75rem">Pan &amp; zoom — hover node for login</span>
+      </div>
     </section>
+
+    <!-- NVL hover tooltip (lives outside graph container so it's not clipped) -->
+    <div id="nvl-tooltip" role="tooltip"></div>
 
   </main>
 
@@ -1303,6 +1439,96 @@
     }
 
     // ==========================================================================
+    // COLLABORATION GRAPH — NVL force-directed visualisation (task-008)
+    // Fetches top 40 collaboration pairs (author↔reviewer) and renders as an
+    // interactive force-directed graph using @neo4j-nvl/base via ESM import.
+    // ==========================================================================
+
+    async function loadCollabGraph() {
+      const container = document.getElementById('collab-graph');
+
+      // Show loading state inside the container
+      container.innerHTML = `
+        <div class="loading-placeholder" style="height:100%;display:flex;flex-direction:column;
+             align-items:center;justify-content:center;color:var(--muted)">
+          <div style="font-size:2rem;margin-bottom:0.5rem">⏳</div>
+          <div>Loading collaboration graph…</div>
+        </div>`;
+
+      // Query: top collaboration pairs (author ↔ reviewer on same PR)
+      const cypher = `
+        MATCH (author:Person)-[:AUTHORED]->(pr:PullRequest)<-[:REVIEWED]-(reviewer:Person)
+        WHERE author <> reviewer
+        WITH author.login AS authorLogin, reviewer.login AS reviewerLogin,
+             COUNT(DISTINCT pr) AS interactions
+        ORDER BY interactions DESC
+        LIMIT 40
+        RETURN authorLogin, reviewerLogin, interactions
+      `;
+
+      const rows = await safeQuery(cypher, {});
+
+      if (!rows || rows.length === 0) {
+        container.innerHTML = `
+          <div class="loading-placeholder" style="height:100%;display:flex;flex-direction:column;
+               align-items:center;justify-content:center;color:var(--muted)">
+            <div style="font-size:1.5rem;margin-bottom:0.5rem">🕸</div>
+            <div>No collaboration data available.</div>
+          </div>`;
+        return;
+      }
+
+      // Build nodes + edges from query results
+      const personMap = {};   // login → {id, login, role, size}
+      const edgeList = [];
+
+      rows.forEach(row => {
+        const { authorLogin, reviewerLogin, interactions } = row;
+
+        if (!personMap[authorLogin]) {
+          personMap[authorLogin] = { id: authorLogin, login: authorLogin, role: 'author', size: 0 };
+        }
+        if (!personMap[reviewerLogin]) {
+          personMap[reviewerLogin] = { id: reviewerLogin, login: reviewerLogin, role: 'reviewer', size: 0 };
+        }
+
+        // Accumulate interaction counts for node sizing
+        personMap[authorLogin].size  += interactions;
+        personMap[reviewerLogin].size += interactions;
+
+        edgeList.push({
+          id: `${authorLogin}→${reviewerLogin}`,
+          from: authorLogin,
+          to: reviewerLogin,
+          count: interactions,
+        });
+      });
+
+      const nodes = Object.values(personMap);
+
+      // Wait for NVL ESM module to be ready (may already be loaded)
+      if (!window._nvlReady) {
+        await new Promise(resolve => {
+          window.addEventListener('nvl-ready', resolve, { once: true });
+          // Safety timeout: if NVL fails to load, show fallback
+          setTimeout(resolve, 8000);
+        });
+      }
+
+      if (typeof window.initNVLGraph !== 'function') {
+        container.innerHTML = `
+          <div class="loading-placeholder" style="height:100%;display:flex;flex-direction:column;
+               align-items:center;justify-content:center;color:var(--muted)">
+            <div style="font-size:1.5rem;margin-bottom:0.5rem">⚠</div>
+            <div>NVL library failed to load. Try refreshing.</div>
+          </div>`;
+        return;
+      }
+
+      window.initNVLGraph(nodes, edgeList);
+    }
+
+    // ==========================================================================
     // DASHBOARD LOADING
     // ==========================================================================
 
@@ -1323,12 +1549,8 @@
       loadCollabPairs();
       loadLabelLeaderboard();
 
-      // Collaboration graph placeholder (task-008)
-      document.getElementById('collab-graph').innerHTML = `
-        <div class="loading-placeholder" style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--accent)">
-          <div style="font-size:2rem;margin-bottom:0.5rem">🕸</div>
-          <div>NVL Collaboration Graph (task-008)</div>
-        </div>`;
+      // Collaboration graph — NVL (task-008)
+      loadCollabGraph();
     }
 
     // ==========================================================================

@@ -97,6 +97,16 @@ For HTML/JS: Open in browser and check console for errors.
 - Bug Slayer: `toLower(l.name) = 'bug'` for case-insensitive label match; `COUNT(DISTINCT pr)` avoids double-counting
 - `loadDashboard()` calls `s.classList.add('visible')` on all sections immediately after login — hero stat fns fire in parallel via `loadGreatDeleter(); loadBugSlayer();` (not awaited)
 
+## NVL integration pattern (task-008)
+- @neo4j-nvl/base ships **ESM only** (dist/base.mjs, ~1MB) — no UMD/CDN script tag build
+- Use `<script type="importmap">` + `<script type="module">` bridge: expose `window.initNVLGraph` so classic scripts can call it
+- NVL constructor: `new NVL(container, nodes, rels, options)` — 5th arg (callbacks) also accepted but lifecycle events only (no mouse events)
+- Mouse hover tooltips: use `container.addEventListener('pointermove', evt => nvl.getHits(evt))` — the hit object has `nvlTargets[].type === 'node'`
+- `HoverInteraction` for hover requires separate `@neo4j-nvl/interaction-handlers` package — avoid unless already needed
+- NVL `options.disableTelemetry: true` suppresses Segment analytics — required by acceptance criteria
+- Node/rel data: `id` required on both; nodes get `caption`, `size`, `color`; rels get `from`, `to`, `width`, `color`
+- Container must have explicit CSS height — `#collab-graph-container { height: 520px }` was already set from task-005
+
 ## Supporting stats pattern (task-007)
 - All 7 load functions use `safeQuery()` (not raw `runQuery()`) for spinner + error toast
 - PR velocity: `WHERE pr.state = 'MERGED'` excludes unmerged; `mergedCount >= 3` filter prevents outliers; display as `Xh` if < 24h else `Xd`
