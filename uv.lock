@@ -498,6 +498,7 @@ notebook = [
     { name = "jupyter" },
     { name = "neo4j-viz" },
     { name = "pandas" },
+    { name = "python-dotenv" },
 ]
 
 [package.metadata]
@@ -508,6 +509,7 @@ requires-dist = [
     { name = "neo4j-rust-ext", specifier = ">=1.0" },
     { name = "neo4j-viz", extras = ["notebook"], marker = "extra == 'notebook'", specifier = ">=0.4" },
     { name = "pandas", marker = "extra == 'notebook'", specifier = ">=2.2" },
+    { name = "python-dotenv", marker = "extra == 'notebook'", specifier = ">=1.0" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'mcp'", specifier = ">=0.30" },
 ]
 provides-extras = ["notebook", "mcp"]
