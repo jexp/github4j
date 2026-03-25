@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GitHub Wrapped — Neo4j</title>
+  <style>
+    /* ===== Reset & Base ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #21262d;
+      --border: #30363d;
+      --accent: #58a6ff;
+      --accent2: #f78166;
+      --accent3: #56d364;
+      --accent4: #d2a8ff;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --danger: #f85149;
+      --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* ===== Config Modal Overlay ===== */
+    #config-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(13, 17, 23, 0.96);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+
+    #config-overlay.hidden { display: none; }
+
+    #config-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+    }
+
+    #config-panel h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--accent);
+    }
+
+    #config-panel p {
+      color: var(--muted);
+      font-size: 0.875rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .field {
+      margin-bottom: 1.25rem;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.4rem;
+    }
+
+    .field input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.875rem;
+      padding: 0.6rem 0.75rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .field input:focus { border-color: var(--accent); }
+
+    .field .hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.3rem;
+    }
+
+    #config-error {
+      color: var(--danger);
+      font-size: 0.8125rem;
+      margin-bottom: 1rem;
+      display: none;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0d1117;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .btn-primary:hover:not(:disabled) { opacity: 0.85; }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+
+    /* ===== Global Spinner ===== */
+    #global-spinner {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 900;
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem 0.875rem;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    #global-spinner.visible { display: flex; }
+
+    .spinner-icon {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===== Error Toast ===== */
+    #error-toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--danger);
+      color: #fff;
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      z-index: 800;
+      opacity: 0;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      max-width: 480px;
+      text-align: center;
+    }
+
+    #error-toast.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* ===== Main Layout ===== */
+    header {
+      text-align: center;
+      padding: 4rem 1rem 2rem;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(88,166,255,0.06) 0%, transparent 100%);
+    }
+
+    header .eyebrow {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+    }
+
+    header h1 {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent4) 60%, var(--accent2) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1rem;
+    }
+
+    header p {
+      color: var(--muted);
+      font-size: 1.125rem;
+      max-width: 480px;
+      margin: 0 auto 1.5rem;
+    }
+
+    #settings-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 6px;
+      font-size: 0.8125rem;
+      padding: 0.4rem 0.875rem;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    #settings-btn:hover { color: var(--text); border-color: var(--muted); }
+
+    /* ===== Content Area ===== */
+    #app {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 6rem;
+    }
+
+    /* ===== Section Styles ===== */
+    .section {
+      margin-bottom: 4rem;
+      opacity: 0;
+      transform: translateY(32px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    .section.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .section-header h2 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .section-header .badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      background: rgba(88, 166, 255, 0.15);
+      color: var(--accent);
+    }
+
+    /* ===== Loading Placeholder ===== */
+    .loading-placeholder {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 3rem;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .loading-placeholder .spinner-icon {
+      width: 24px;
+      height: 24px;
+      margin: 0 auto 1rem;
+    }
+
+    /* ===== Hero Stat Card ===== */
+    .hero-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+    }
+
+    /* ===== Stat Table ===== */
+    .stat-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .stat-table th {
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      padding: 0 0.75rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .stat-table td {
+      padding: 0.75rem;
+      border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+      font-size: 0.9375rem;
+    }
+
+    .stat-table tr:last-child td { border-bottom: none; }
+
+    .rank {
+      color: var(--muted);
+      font-size: 0.8125rem;
+      font-family: var(--font-mono);
+      width: 2.5rem;
+    }
+
+    .login {
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .stat-value {
+      font-family: var(--font-mono);
+      font-size: 0.9375rem;
+      text-align: right;
+      font-weight: 600;
+    }
+
+    /* ===== Graph Visualisation Container ===== */
+    #collab-graph-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 100%;
+      height: 520px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #collab-graph {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ===== Footer ===== */
+    footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.8125rem;
+    }
+
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Config Overlay ===== -->
+  <div id="config-overlay">
+    <div id="config-panel" role="dialog" aria-labelledby="config-title" aria-modal="true">
+      <h2 id="config-title">Connect to AuraDB</h2>
+      <p>Enter your Neo4j AuraDB credentials. They are stored only in your browser's localStorage — never sent to any server other than your AuraDB instance.</p>
+
+      <div class="field">
+        <label for="cfg-uri">AuraDB HTTP Endpoint</label>
+        <input type="url" id="cfg-uri" placeholder="https://xxxxxxxx.databases.neo4j.io" autocomplete="off" spellcheck="false" />
+        <div class="hint">e.g. <code>https://abc123.databases.neo4j.io</code> — no trailing slash</div>
+      </div>
+
+      <div class="field">
+        <label for="cfg-user">Username</label>
+        <input type="text" id="cfg-user" value="neo4j" autocomplete="username" />
+      </div>
+
+      <div class="field">
+        <label for="cfg-pass">Password</label>
+        <input type="password" id="cfg-pass" autocomplete="current-password" />
+      </div>
+
+      <p id="config-error" role="alert"></p>
+
+      <button class="btn btn-primary" id="config-save-btn" type="button">
+        Save &amp; Load Dashboard
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== Global Loading Spinner ===== -->
+  <div id="global-spinner" role="status" aria-live="polite" aria-label="Loading data">
+    <div class="spinner-icon" aria-hidden="true"></div>
+    Loading…
+  </div>
+
+  <!-- ===== Error Toast ===== -->
+  <div id="error-toast" role="alert" aria-live="assertive"></div>
+
+  <!-- ===== Page Header ===== -->
+  <header>
+    <div class="eyebrow">Powered by Neo4j</div>
+    <h1>GitHub Wrapped</h1>
+    <p>Your team's 2025 GitHub activity — explored as a property graph.</p>
+    <button id="settings-btn" type="button" aria-label="Reconnect / change AuraDB credentials">⚙ Settings</button>
+  </header>
+
+  <!-- ===== Main App ===== -->
+  <main id="app">
+
+    <!-- Hero: Great Deleter -->
+    <section class="section" id="section-deleter" aria-label="Great Deleter hero stat">
+      <div class="section-header">
+        <h2>🗑 The Great Deleter</h2>
+        <span class="badge">Hero Stat</span>
+      </div>
+      <div class="hero-card" id="deleter-content">
+        <div class="loading-placeholder">
+          <div class="spinner-icon"></div>
+          <div>Loading Great Deleter stats…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Hero: Bug Slayer -->
+    <section class="section" id="section-bugslayer" aria-label="Bug Slayer hero stat">
+      <div class="section-header">
+        <h2>🐛 Bug Slayer</h2>
+        <span class="badge">Hero Stat</span>
+      </div>
+      <div class="hero-card" id="bugslayer-content">
+        <div class="loading-placeholder">
+          <div class="spinner-icon"></div>
+          <div>Loading Bug Slayer stats…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Top Contributors -->
+    <section class="section" id="section-contributors" aria-label="Top contributors">
+      <div class="section-header">
+        <h2>🏆 Top Contributors</h2>
+        <span class="badge">by PRs</span>
+      </div>
+      <div class="hero-card" id="contributors-content">
+        <div class="loading-placeholder">
+          <div class="spinner-icon"></div>
+          <div>Loading contributor stats…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Top Reviewers -->
+    <section class="section" id="section-reviewers" aria-label="Top reviewers">
+      <div class="section-header">
+        <h2>👀 Top Reviewers</h2>
+        <span class="badge">by review count</span>
+      </div>
+      <div class="hero-card" id="reviewers-content">
+        <div class="loading-placeholder">
+          <div class="spinner-icon"></div>
+          <div>Loading reviewer stats…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Hottest Files -->
+    <section class="section" id="section-files" aria-label="Hottest files">
+      <div class="section-header">
+        <h2>🔥 Hottest Files</h2>
+        <span class="badge">by PR touch count</span>
+      </div>
+      <div class="hero-card" id="files-content">
+        <div class="loading-placeholder">
+          <div class="spinner-icon"></div>
+          <div>Loading file stats…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Hottest Directories -->
+    <section class="section" id="section-dirs" aria-label="Hottest directories">
+      <div class="section-header">
+        <h2>📁 Hottest Directories</h2>
+        <span class="badge">by PR touch count</span>
+      </div>
+      <div class="hero-card" id="dirs-content">
+        <div class="loading-placeholder">
+          <div class="spinner-icon"></div>
+          <div>Loading directory stats…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PR Velocity -->
+    <section class="section" id="section-velocity" aria-label="PR velocity">
+      <div class="section-header">
+        <h2>⚡ PR Velocity</h2>
+        <span class="badge">avg hours to merge</span>
+      </div>
+      <div class="hero-card" id="velocity-content">
+        <div class="loading-placeholder">
+          <div class="spinner-icon"></div>
+          <div>Loading velocity stats…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Collaboration Pairs -->
+    <section class="section" id="section-pairs" aria-label="Collaboration pairs">
+      <div class="section-header">
+        <h2>🤝 Collaboration Pairs</h2>
+        <span class="badge">author ↔ reviewer</span>
+      </div>
+      <div class="hero-card" id="pairs-content">
+        <div class="loading-placeholder">
+          <div class="spinner-icon"></div>
+          <div>Loading collaboration stats…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Label Leaderboard -->
+    <section class="section" id="section-labels" aria-label="Label leaderboard">
+      <div class="section-header">
+        <h2>🏷 Label Leaderboard</h2>
+        <span class="badge">most-used labels</span>
+      </div>
+      <div class="hero-card" id="labels-content">
+        <div class="loading-placeholder">
+          <div class="spinner-icon"></div>
+          <div>Loading label stats…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Collaboration Graph (NVL) -->
+    <section class="section" id="section-graph" aria-label="Collaboration graph">
+      <div class="section-header">
+        <h2>🕸 Collaboration Graph</h2>
+        <span class="badge">interactive</span>
+      </div>
+      <div id="collab-graph-container">
+        <div id="collab-graph"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    Built with <a href="https://neo4j.com/cloud/aura/" target="_blank" rel="noopener">Neo4j AuraDB</a>
+    &amp; <a href="https://neo4j.com/developer/neo4j-visualization-library/" target="_blank" rel="noopener">NVL</a>.
+    No credentials leave your browser.
+  </footer>
+
+  <script>
+    // ==========================================================================
+    // CONFIG — localStorage credential management
+    // ==========================================================================
+
+    const LS_KEY = 'github_wrapped_neo4j_creds';
+
+    /** Load credentials from localStorage. Returns null if not set. */
+    function loadCreds() {
+      try {
+        const raw = localStorage.getItem(LS_KEY);
+        if (!raw) return null;
+        const creds = JSON.parse(raw);
+        if (!creds.uri || !creds.user || !creds.pass) return null;
+        return creds;
+      } catch {
+        return null;
+      }
+    }
+
+    /** Persist credentials to localStorage. */
+    function saveCreds(uri, user, pass) {
+      localStorage.setItem(LS_KEY, JSON.stringify({ uri, user, pass }));
+    }
+
+    /** Clear stored credentials (used by settings button). */
+    function clearCreds() {
+      localStorage.removeItem(LS_KEY);
+    }
+
+    // ==========================================================================
+    // UI HELPERS
+    // ==========================================================================
+
+    const overlay = document.getElementById('config-overlay');
+    const spinner = document.getElementById('global-spinner');
+    const errorToast = document.getElementById('error-toast');
+
+    let _activeQueries = 0;
+
+    function showSpinner() {
+      _activeQueries++;
+      spinner.classList.add('visible');
+    }
+
+    function hideSpinner() {
+      _activeQueries = Math.max(0, _activeQueries - 1);
+      if (_activeQueries === 0) spinner.classList.remove('visible');
+    }
+
+    let _toastTimer = null;
+
+    /** Show a user-visible error message as a toast notification. */
+    function showError(message) {
+      errorToast.textContent = message;
+      errorToast.classList.add('visible');
+      if (_toastTimer) clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(() => errorToast.classList.remove('visible'), 6000);
+    }
+
+    function showConfigPanel() {
+      const creds = loadCreds();
+      if (creds) {
+        document.getElementById('cfg-uri').value = creds.uri;
+        document.getElementById('cfg-user').value = creds.user;
+        document.getElementById('cfg-pass').value = creds.pass;
+      }
+      overlay.classList.remove('hidden');
+      setTimeout(() => document.getElementById('cfg-uri').focus(), 50);
+    }
+
+    function hideConfigPanel() {
+      overlay.classList.add('hidden');
+    }
+
+    // ==========================================================================
+    // CORE: runQuery(cypher, params) → Promise<Array<Object>>
+    // ==========================================================================
+
+    /**
+     * Execute a parameterised Cypher query against the AuraDB HTTP transaction API.
+     *
+     * @param {string} cypher   - Cypher statement (use $param placeholders — no interpolation)
+     * @param {Object} params   - Named parameters matching $param placeholders
+     * @returns {Promise<Array<Object>>}  Array of row objects keyed by column name
+     * @throws {Error}          With a user-visible message on network or AuraDB errors
+     */
+    async function runQuery(cypher, params = {}) {
+      const creds = loadCreds();
+      if (!creds) {
+        throw new Error('AuraDB credentials not configured. Click ⚙ Settings to connect.');
+      }
+
+      // AuraDB HTTP transaction endpoint
+      const endpoint = `${creds.uri}/db/neo4j/tx/commit`;
+
+      const body = JSON.stringify({
+        statements: [{ statement: cypher, parameters: params }]
+      });
+
+      const auth = btoa(`${creds.user}:${creds.pass}`);
+
+      let response;
+      try {
+        response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json;charset=UTF-8',
+            'Authorization': `Basic ${auth}`
+          },
+          body
+        });
+      } catch (err) {
+        // Network-level error (DNS, CORS preflight blocked, etc.)
+        throw new Error(
+          `Cannot reach AuraDB. Check that the endpoint URL is correct and the AuraDB instance is running. (${err.message})`
+        );
+      }
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('AuraDB authentication failed. Check your username and password in ⚙ Settings.');
+        }
+        throw new Error(`AuraDB HTTP error ${response.status}: ${response.statusText}`);
+      }
+
+      let payload;
+      try {
+        payload = await response.json();
+      } catch {
+        throw new Error('AuraDB returned an unexpected non-JSON response.');
+      }
+
+      // Neo4j HTTP API surfaces errors inside the JSON body even on 200 OK
+      if (payload.errors && payload.errors.length > 0) {
+        const firstError = payload.errors[0];
+        throw new Error(`Cypher error [${firstError.code}]: ${firstError.message}`);
+      }
+
+      // Transform columnar response into array of row objects
+      const result = payload.results[0];
+      if (!result) return [];
+
+      const { columns, data } = result;
+      return data.map(row => {
+        const obj = {};
+        columns.forEach((col, i) => { obj[col] = row.row[i]; });
+        return obj;
+      });
+    }
+
+    /**
+     * Convenience wrapper: runs query with spinner + error toast.
+     * Returns null on error (caller receives null and can show a fallback).
+     */
+    async function safeQuery(cypher, params = {}) {
+      showSpinner();
+      try {
+        return await runQuery(cypher, params);
+      } catch (err) {
+        showError(err.message);
+        return null;
+      } finally {
+        hideSpinner();
+      }
+    }
+
+    // ==========================================================================
+    // CONFIG PANEL WIRING
+    // ==========================================================================
+
+    document.getElementById('config-save-btn').addEventListener('click', async function () {
+      const uri = document.getElementById('cfg-uri').value.trim().replace(/\/$/, '');
+      const user = document.getElementById('cfg-user').value.trim();
+      const pass = document.getElementById('cfg-pass').value;
+      const errEl = document.getElementById('config-error');
+
+      if (!uri) { errEl.textContent = 'Please enter the AuraDB endpoint URL.'; errEl.style.display = 'block'; return; }
+      if (!user) { errEl.textContent = 'Please enter the username.'; errEl.style.display = 'block'; return; }
+      if (!pass) { errEl.textContent = 'Please enter the password.'; errEl.style.display = 'block'; return; }
+
+      errEl.style.display = 'none';
+      this.disabled = true;
+      this.textContent = 'Testing connection…';
+
+      // Test connection with a lightweight query
+      try {
+        saveCreds(uri, user, pass);
+        await runQuery('RETURN 1 AS ok');
+        hideConfigPanel();
+        loadDashboard();
+      } catch (err) {
+        clearCreds();
+        errEl.textContent = err.message;
+        errEl.style.display = 'block';
+      } finally {
+        this.disabled = false;
+        this.textContent = 'Save & Load Dashboard';
+      }
+    });
+
+    document.getElementById('settings-btn').addEventListener('click', () => {
+      showConfigPanel();
+    });
+
+    // Allow Enter key to submit the config form
+    document.getElementById('config-panel').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('config-save-btn').click();
+    });
+
+    // ==========================================================================
+    // INTERSECTION OBSERVER — animate sections in on scroll
+    // ==========================================================================
+
+    const sectionObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          sectionObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08 });
+
+    document.querySelectorAll('.section').forEach(s => sectionObserver.observe(s));
+
+    // ==========================================================================
+    // LOADING PLACEHOLDER HELPERS
+    // ==========================================================================
+
+    function setLoading(containerId) {
+      const el = document.getElementById(containerId);
+      el.innerHTML = `
+        <div class="loading-placeholder">
+          <div class="spinner-icon"></div>
+          <div>Loading…</div>
+        </div>`;
+    }
+
+    function setError(containerId, message) {
+      document.getElementById(containerId).innerHTML = `
+        <div class="loading-placeholder" style="color:var(--danger)">
+          <div style="font-size:1.25rem;margin-bottom:0.5rem">⚠</div>
+          <div>${escapeHtml(message)}</div>
+        </div>`;
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // ==========================================================================
+    // DASHBOARD LOADING — placeholder stubs, implemented in later tasks
+    // ==========================================================================
+
+    async function loadDashboard() {
+      // Make all sections visible immediately via IntersectionObserver nudge
+      document.querySelectorAll('.section').forEach(s => s.classList.add('visible'));
+
+      // Each stat section is implemented in later tasks (task-006, task-007, task-008).
+      // For now, show a "ready" placeholder so the scaffold is testable end-to-end.
+      const sections = [
+        'deleter-content',
+        'bugslayer-content',
+        'contributors-content',
+        'reviewers-content',
+        'files-content',
+        'dirs-content',
+        'velocity-content',
+        'pairs-content',
+        'labels-content',
+      ];
+
+      for (const id of sections) {
+        document.getElementById(id).innerHTML = `
+          <div class="loading-placeholder" style="color:var(--accent3)">
+            <div style="font-size:1.25rem;margin-bottom:0.5rem">✓</div>
+            <div>Connected to AuraDB. Stats will load here (task-006 / task-007).</div>
+          </div>`;
+      }
+
+      // Collaboration graph placeholder (task-008)
+      document.getElementById('collab-graph').innerHTML = `
+        <div class="loading-placeholder" style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--accent)">
+          <div style="font-size:2rem;margin-bottom:0.5rem">🕸</div>
+          <div>NVL Collaboration Graph (task-008)</div>
+        </div>`;
+    }
+
+    // ==========================================================================
+    // BOOTSTRAP
+    // ==========================================================================
+
+    (function init() {
+      const creds = loadCreds();
+      if (creds) {
+        hideConfigPanel();
+        loadDashboard();
+      } else {
+        showConfigPanel();
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -118,3 +118,33 @@ Key Decisions:
   second groups by YearMonth string and counts rows — valid Cypher aggregation
 
 Next Task: task-005 (Build static web app scaffold with AuraDB credential config)
+
+================================================================================
+TASK-005: Build static web app scaffold with AuraDB credential config
+Date: 2026-03-25T19:00:00Z
+================================================================================
+
+Summary:
+Created docs/index.html — a single-page HTML app skeleton with config panel,
+credential localStorage management, a runQuery()/safeQuery() helper, a global
+loading spinner, an error toast, and placeholder sections for all 9 stat areas
+plus the NVL graph container. Sections animate in via IntersectionObserver.
+
+Files Changed:
+- docs/index.html (created): Full SPA scaffold with config overlay, spinner, error
+  toast, 9 stat section placeholders, NVL graph container, and JS credential/query
+  management code; ready for task-006 and task-007 to fill in stat content.
+
+Key Decisions:
+- AuraDB HTTP endpoint: POST {uri}/db/neo4j/tx/commit (matches AGENTS.md note)
+- runQuery() returns Array<Object> by de-pivoting the Neo4j columnar HTTP response
+  (payload.results[0].columns + data[].row into key-value objects per row)
+- safeQuery() wraps runQuery() with showSpinner/hideSpinner and showError on failure
+- Credentials stored under key 'github_wrapped_neo4j_creds' in localStorage as JSON
+- Config panel tests connection with RETURN 1 AS ok before closing — clears creds
+  if test fails so stale bad credentials aren't silently retained
+- IntersectionObserver (threshold 0.08) drives CSS opacity+translateY section reveal;
+  all sections set to visible immediately after login for smooth first load
+- No external JS dependencies in scaffold — NVL CDN load deferred to task-008
+
+Next Task: task-006 (Implement hero stat sections: Great Deleter and Bug Slayer)

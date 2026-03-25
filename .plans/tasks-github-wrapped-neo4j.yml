@@ -80,7 +80,7 @@ tasks:
       in localStorage, and provides a helper function to POST parameterised Cypher queries
       to the AuraDB HTTP transaction API via fetch(). Include loading state UI and error
       handling for cold AuraDB starts.
-    status: pending
+    status: completed
     dependencies:
       - task-003
     acceptance_criteria:
@@ -89,7 +89,7 @@ tasks:
       - "runQuery(cypher, params) helper returns parsed rows or throws with a user-visible error"
       - "Loading spinner shown while queries are in-flight"
       - "Page works when served from GitHub Pages HTTPS"
-    completed_at: null
+    completed_at: "2026-03-25T19:00:00Z"
 
   - id: task-006
     title: "Implement hero stat sections: Great Deleter and Bug Slayer"

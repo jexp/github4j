@@ -77,3 +77,14 @@ For HTML/JS: Open in browser and check console for errors.
 
 - `WHERE NOT ()-[:REL]->()` is a GLOBAL pattern check (always true/false for entire graph)
 - To scope to a bound node: `WHERE NOT ()-[:REL]->(p)` or `WHERE NOT (p)-[:REL]->()`
+
+## Web App (docs/index.html) Notes
+
+- Scaffold at `docs/index.html` — single HTML file, no build step, no external deps yet
+- `runQuery(cypher, params)` POSTs to `{uri}/db/neo4j/tx/commit` with Basic auth; returns `Array<Object>` (de-pivoted from Neo4j columnar format)
+- `safeQuery()` = runQuery + spinner + error toast; use this in stat sections, not raw runQuery
+- Credentials stored in localStorage under key `github_wrapped_neo4j_creds` as `{uri, user, pass}` JSON
+- Config panel validates with `RETURN 1 AS ok` before closing; clears creds on failure so stale creds don't persist
+- Neo4j HTTP response format: `payload.results[0].columns` + `data[].row` — de-pivot with `columns.forEach((col,i) => obj[col] = row.row[i])`
+- NVL graph div (`#collab-graph`) has explicit `height: 520px` on container — required for NVL to render (task-008)
+- Section reveal: IntersectionObserver (threshold 0.08) adds `.visible` class → CSS opacity+translateY transition
