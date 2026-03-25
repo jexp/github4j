@@ -154,9 +154,9 @@ def seed(driver):
                 pr.url          = row.url,
                 pr.state        = row.state,
                 pr.isDraft      = (row.isDraft = 'true'),
-                pr.createdAt    = row.createdAt,
-                pr.mergedAt     = row.mergedAt,
-                pr.closedAt     = row.closedAt,
+                pr.createdAt    = CASE WHEN row.createdAt IS NOT NULL AND row.createdAt <> '' THEN datetime(row.createdAt) ELSE null END,
+                pr.mergedAt     = CASE WHEN row.mergedAt  IS NOT NULL AND row.mergedAt  <> '' THEN datetime(row.mergedAt)  ELSE null END,
+                pr.closedAt     = CASE WHEN row.closedAt  IS NOT NULL AND row.closedAt  <> '' THEN datetime(row.closedAt)  ELSE null END,
                 pr.additions    = toInteger(row.additions),
                 pr.deletions    = toInteger(row.deletions),
                 pr.changedFiles = toInteger(row.changedFiles),
@@ -204,7 +204,7 @@ def seed(driver):
             MATCH (pr:PullRequest {prId: row.prId})
             MERGE (reviewer)-[rev:REVIEWED]->(pr)
             SET rev.state        = row.state,
-                rev.submittedAt  = row.submittedAt,
+                rev.submittedAt  = CASE WHEN row.submittedAt IS NOT NULL AND row.submittedAt <> '' THEN datetime(row.submittedAt) ELSE null END,
                 rev.commentCount = toInteger(coalesce(row.commentCount, '0'))
         """, rows, "REVIEWED")
 

@@ -184,7 +184,7 @@ def run_verify(driver):
             MATCH (p:Person)-[:AUTHORED]->(pr:PullRequest)
             WHERE pr.state = 'MERGED' AND pr.mergedAt IS NOT NULL AND pr.createdAt IS NOT NULL
             WITH p.login AS author,
-                 avg(duration.inSeconds(pr.createdAt, pr.mergedAt).seconds / 3600.0) AS avgHrs,
+                 avg(duration.inSeconds(datetime(toString(pr.createdAt)), datetime(toString(pr.mergedAt))).seconds / 3600.0) AS avgHrs,
                  count(pr) AS mergedPRs
             WHERE mergedPRs >= 5
             RETURN author, round(avgHrs, 1) AS avgHoursToMerge, mergedPRs
