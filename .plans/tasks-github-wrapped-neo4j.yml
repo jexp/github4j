@@ -238,6 +238,27 @@ tasks:
       - "Server starts with uv run uvicorn and responds to requests locally"
     completed_at: null
 
+  - id: task-015
+    title: "Embed PR titles and populate vector index"
+    description: |
+      Write embed.py (uv-managed) that reads all PullRequest prId + title pairs from AuraDB,
+      calls an embedding model (OpenAI text-embedding-3-small via the openai package, or a
+      local model via sentence-transformers as fallback), and writes the resulting Float[]
+      back to each PullRequest node as pr.titleEmbedding. This activates the pr_title_vector
+      VECTOR index for semantic similarity search. Include a --model flag to switch providers
+      and a --batch flag for throughput control.
+    status: pending
+    dependencies:
+      - task-003
+    acceptance_criteria:
+      - "embed.py exists, managed with uv, deps: neo4j-rust-ext, openai (optional: sentence-transformers)"
+      - "Reads PR titles from AuraDB in batches, calls embedding API, writes titleEmbedding back"
+      - "OPENAI_API_KEY loaded from environment — not hardcoded"
+      - "Idempotent: skips PRs that already have titleEmbedding set (unless --force)"
+      - "After run: CALL db.index.vector.queryNodes('pr_title_vector', 5, $vec) returns results"
+      - "Example similarity query in README or script comments: find PRs semantically similar to 'fix authentication bug'"
+    completed_at: null
+
   - id: task-014
     title: "Deploy MCP server to Vercel or Railway"
     description: |
