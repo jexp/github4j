@@ -9,7 +9,7 @@
 // Run BEFORE: 04_prs.cypher
 // ============================================================
 
-LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/neo4j-field/github-wrapped-neo4j/main/data/repos.csv' AS row
+LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/jexp/github4j/main/data/repos.csv' AS row
 MERGE (r:Repo {repoId: row.repoId})
 SET r.owner = row.owner,
     r.name  = row.name,

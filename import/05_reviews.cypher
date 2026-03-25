@@ -20,7 +20,7 @@
 //   commentCount: Integer
 // ============================================================
 
-LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/neo4j-field/github-wrapped-neo4j/main/data/reviews.csv' AS row
+LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/jexp/github4j/main/data/reviews.csv' AS row
 MERGE (reviewer:Person {login: row.reviewerLogin})
 WITH reviewer, row
 MATCH (pr:PullRequest {prId: row.prId})

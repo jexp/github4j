@@ -1,0 +1,26 @@
+[project]
+name = "github4j"
+version = "0.1.0"
+description = "GitHub Wrapped — Neo4j hackathon demo"
+requires-python = ">=3.11"
+dependencies = [
+    "neo4j-rust-ext>=1.0",
+]
+
+[project.optional-dependencies]
+notebook = [
+    "graphdatascience>=1.10",
+    "neo4j-viz[notebook]>=0.4",
+    "jupyter>=1.1",
+    "pandas>=2.2",
+]
+mcp = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+]
+
+[tool.uv]
+dev-dependencies = []
+
+[project.scripts]
+seed = "seed:main"

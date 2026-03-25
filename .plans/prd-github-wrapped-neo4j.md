@@ -63,7 +63,7 @@ A "Spotify Wrapped"-style analytics demo built on Neo4j AuraDB, using GitHub act
 
 #### P3 — GDS Exploration Notebook
 
-- REQ-F-020: Jupyter notebook (`notebooks/github_gds.ipynb`) using `neo4j` Python driver and `graphdatascience` client library
+- REQ-F-020: Jupyter notebook (`notebooks/github_gds.ipynb`) using `neo4j-rust-ext` Python driver and `graphdatascience` client library; project managed with `uv`
 - REQ-F-021: Project a collaboration graph: `(:Person)-[:REVIEWED]->(:Person)` (via shared PRs) into GDS in-memory
 - REQ-F-022: Run Louvain community detection; assign `community` property back to `Person` nodes
 - REQ-F-023: Compare detected communities against `team-*` labels from PRs — compute overlap/accuracy metric
@@ -73,7 +73,7 @@ A "Spotify Wrapped"-style analytics demo built on Neo4j AuraDB, using GitHub act
 
 #### P4 — MCP Server
 
-- REQ-F-030: FastAPI app (`mcp_server/main.py`) exposing an MCP-compatible HTTP endpoint
+- REQ-F-030: FastAPI app (`mcp_server/main.py`) exposing an MCP-compatible HTTP endpoint; project managed with `uv`, using `neo4j-rust-ext` as the Neo4j driver
 - REQ-F-031: Tools exposed:
   - `get_top_contributors(metric: "prs"|"deletions"|"bug_fixes", limit: int)` → ranked list
   - `get_collaboration_pairs(limit: int)` → top author↔reviewer pairs with counts
@@ -81,7 +81,7 @@ A "Spotify Wrapped"-style analytics demo built on Neo4j AuraDB, using GitHub act
   - `get_pr_velocity(author: str?)` → avg merge time, optionally filtered by author
   - `search_person(login: str)` → full stats for one contributor
   - `get_community_summary()` → community sizes and representative members
-- REQ-F-032: Each tool runs a parameterised Cypher query against AuraDB; connection config via environment variables
+- REQ-F-032: Each tool runs a parameterised Cypher query against AuraDB via `neo4j-rust-ext`; connection config via environment variables
 - REQ-F-033: OpenAPI spec auto-generated at `/openapi.json` (importable into Claude Projects as a tool)
 - REQ-F-034: Deploy to Vercel or Railway (free tier) so Claude can reach it over HTTPS
 
@@ -134,7 +134,7 @@ ORDER BY bugsFixed DESC LIMIT 10
 - Container `div` **must have explicit CSS `height`** or graph renders invisibly
 - Used in the static web app for the collaboration graph panel
 
-**neo4j-viz (Python)** — `pip install neo4j-viz[notebook]`
+**neo4j-viz (Python)** — `uv add neo4j-viz[notebook]`
 - `Node(id, size, caption)`, `Relationship(source, target, caption)`, `VisualizationGraph(nodes, rels).render()`
 - Renders interactive NVL-backed graph inside Jupyter notebooks
 - Has native GDS integration — can pass GDS result DataFrames directly

@@ -32,7 +32,7 @@
 // ============================================================
 
 // Option A: Full import (may exceed AuraDB Free tier — use paid tier)
-LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/neo4j-field/github-wrapped-neo4j/main/data/files_touched.csv' AS row
+LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/jexp/github4j/main/data/files_touched.csv' AS row
 MATCH (pr:PullRequest {prId: row.prId})
 MATCH (f:File {fileId: row.fileId})
 MERGE (pr)-[t:TOUCHES]->(f)
@@ -47,7 +47,7 @@ MATCH ()-[r:TOUCHES]->() RETURN count(r) AS touchesCount;
 // Comment out Option A above and uncomment the block below.
 // Replace 'neo4j/upx' with your target repo repoId.
 // ============================================================
-// LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/neo4j-field/github-wrapped-neo4j/main/data/files_touched.csv' AS row
+// LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/jexp/github4j/main/data/files_touched.csv' AS row
 // WITH row WHERE row.repoId = 'neo4j/upx'
 // MATCH (pr:PullRequest {prId: row.prId})
 // MATCH (f:File {fileId: row.fileId})

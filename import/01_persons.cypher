@@ -12,7 +12,7 @@
 // Update the URL below to point to your hosted CSV location.
 // ============================================================
 
-LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/neo4j-field/github-wrapped-neo4j/main/data/persons.csv' AS row
+LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/jexp/github4j/main/data/persons.csv' AS row
 MERGE (p:Person {login: row.login})
 SET p.url = row.url;
 

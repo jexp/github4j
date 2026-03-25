@@ -21,7 +21,7 @@
 // ============================================================
 
 // --- Pass 1: Create PullRequest nodes + AUTHORED + IN_REPO ---
-LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/neo4j-field/github-wrapped-neo4j/main/data/prs.csv' AS row
+LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/jexp/github4j/main/data/prs.csv' AS row
 MERGE (pr:PullRequest {prId: row.prId})
 SET pr.number       = toInteger(row.number),
     pr.title        = row.title,
@@ -46,14 +46,14 @@ MATCH (repo:Repo {repoId: row.repoId})
 MERGE (pr)-[:IN_REPO]->(repo);
 
 // --- Pass 2: MERGED relationships (only where mergedBy is non-empty) ---
-LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/neo4j-field/github-wrapped-neo4j/main/data/prs.csv' AS row
+LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/jexp/github4j/main/data/prs.csv' AS row
 WITH row WHERE row.mergedBy IS NOT NULL AND row.mergedBy <> ''
 MATCH (pr:PullRequest {prId: row.prId})
 MERGE (merger:Person {login: row.mergedBy})
 MERGE (merger)-[:MERGED]->(pr);
 
 // --- Pass 3: Label nodes + HAS_LABEL relationships ---
-LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/neo4j-field/github-wrapped-neo4j/main/data/prs.csv' AS row
+LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/jexp/github4j/main/data/prs.csv' AS row
 WITH row WHERE row.labels IS NOT NULL AND row.labels <> ''
 MATCH (pr:PullRequest {prId: row.prId})
 WITH pr, SPLIT(row.labels, ';') AS labelList

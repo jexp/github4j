@@ -14,7 +14,7 @@
 // ============================================================
 
 // --- Pass 1: Create File nodes ---
-LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/neo4j-field/github-wrapped-neo4j/main/data/files.csv' AS row
+LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/jexp/github4j/main/data/files.csv' AS row
 MERGE (f:File {fileId: row.fileId})
 SET f.path      = row.path,
     f.filename  = row.filename,
@@ -23,7 +23,7 @@ SET f.path      = row.path,
 
 // --- Pass 2: Create Directory nodes and IN_DIR relationships ---
 // Only for files that have a non-empty directory field
-LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/neo4j-field/github-wrapped-neo4j/main/data/files.csv' AS row
+LOAD CSV WITH HEADERS FROM 'https://raw.githubusercontent.com/jexp/github4j/main/data/files.csv' AS row
 WITH row WHERE row.directory IS NOT NULL AND row.directory <> ''
 MERGE (d:Directory {path: row.directory, repoId: row.repoId})
 WITH d, row
