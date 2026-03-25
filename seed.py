@@ -198,7 +198,7 @@ def seed(driver):
         rows = read_csv("reviews.csv")
         run_batch(s, """
             UNWIND $rows AS row
-            WHERE row.reviewerLogin IS NOT NULL AND row.reviewerLogin <> ''
+            WITH row WHERE row.reviewerLogin IS NOT NULL AND row.reviewerLogin <> ''
             MERGE (reviewer:Person {login: row.reviewerLogin})
             WITH reviewer, row
             MATCH (pr:PullRequest {prId: row.prId})
