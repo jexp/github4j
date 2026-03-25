@@ -114,7 +114,16 @@ Paste `import/verify.cypher` into AuraDB Browser — checks node counts, relatio
 ## 🔬 GDS notebook (community detection)
 
 ```bash
+uv sync --extra notebook   # first time only — installs graphdatascience, neo4j-viz, python-dotenv
 uv run --extra notebook jupyter notebook notebooks/github_gds.ipynb
+```
+
+Credentials are loaded automatically from `integration.env` in the project root (same file used by `seed.py` and `verify.py`):
+
+```
+NEO4J_URI=neo4j+s://xxxx.databases.neo4j.io
+NEO4J_USERNAME=neo4j
+NEO4J_PASSWORD=your-password
 ```
 
 Runs **Louvain community detection** on the collaboration graph (who reviews whose PRs) and compares detected communities against `team-*` labels. Are the informal teams the same as the org chart? Probably not. 👀
