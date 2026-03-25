@@ -50,6 +50,8 @@
         color: '#30363d',
       }));
 
+      const tooltip = document.getElementById('nvl-tooltip');
+
       const nvl = new NVL(
         container,
         nvlNodes,
@@ -60,40 +62,25 @@
           initialZoom: 0.6,
           minZoom: 0.1,
           maxZoom: 4,
+          // NVL built-in mouse callbacks — more reliable than getHits()
+          mouseoverNode: (node, rawEvent) => {
+            tooltip.textContent = (node && (node.caption || node.id)) || '';
+            tooltip.style.display = 'block';
+            if (rawEvent) {
+              tooltip.style.left = (rawEvent.clientX + 14) + 'px';
+              tooltip.style.top  = (rawEvent.clientY + 14) + 'px';
+            }
+          },
+          mouseoutNode: () => {
+            tooltip.style.display = 'none';
+          },
+          onPan: () => { tooltip.style.display = 'none'; },
+          onZoom: () => { tooltip.style.display = 'none'; },
         }
       );
 
-      // Tooltip on hover — use getHits() with native pointer events
-      const tooltip = document.getElementById('nvl-tooltip');
-      let _hoveredNodeId = null;
-
-      container.addEventListener('pointermove', (evt) => {
-        const hits = nvl.getHits(evt);
-        // nvlTargets may be a Set or array depending on NVL version — normalise to array
-        let targets = [];
-        if (Array.isArray(hits)) targets = hits;
-        else if (hits && hits.nvlTargets) targets = Array.from(hits.nvlTargets);
-        const nodeHit = targets.find(t => t.type === 'node');
-        if (nodeHit) {
-          const caption = nodeHit.element && (nodeHit.element.data && nodeHit.element.data.caption
-                          || nodeHit.element.caption || nodeHit.element.id);
-          if (_hoveredNodeId !== nodeHit.element.id) {
-            _hoveredNodeId = nodeHit.element.id;
-            tooltip.textContent = caption || nodeHit.element.id;
-          }
-          tooltip.style.display = 'block';
-          tooltip.style.left = (evt.clientX + 14) + 'px';
-          tooltip.style.top  = (evt.clientY + 14) + 'px';
-        } else {
-          tooltip.style.display = 'none';
-          _hoveredNodeId = null;
-        }
-      });
-
-      container.addEventListener('pointerleave', () => {
-        tooltip.style.display = 'none';
-        _hoveredNodeId = null;
-      });
+      // fit() centers nodes and triggers proper canvas sizing
+      try { nvl.fit(); } catch(_) {}
 
       window._nvlInstance = nvl;
     };
@@ -652,7 +639,11 @@
     #collab-graph {
       width: 100%;
       height: 100%;
+      touch-action: none;   /* PixiJS needs this — prevents browser scroll-capture on wheel/pointer */
+      cursor: grab;
     }
+
+    #collab-graph:active { cursor: grabbing; }
 
     /* ===== NVL Tooltip ===== */
     #nvl-tooltip {
