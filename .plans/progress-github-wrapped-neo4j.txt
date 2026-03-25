@@ -177,3 +177,31 @@ Key Decisions:
 - All login values run through escapeHtml() before innerHTML insertion
 
 Next Task: task-007 (Implement supporting stats cards — 7 sections)
+
+================================================================================
+TASK-007: Implement supporting stats cards (7 sections)
+Date: 2026-03-25T23:00:00Z
+================================================================================
+
+Summary:
+All 7 supporting stat sections were already implemented in docs/index.html as part
+of the task-006 work. Verified all sections meet acceptance criteria: functions
+present, HTML containers present, all called from loadDashboard(), JS syntax valid.
+
+Files Changed:
+- docs/index.html (verified/confirmed): All 7 supporting stat load functions
+  (loadTopContributors, loadTopReviewers, loadHottestFiles, loadHottestDirs,
+  loadPRVelocity, loadCollabPairs, loadLabelLeaderboard) implemented and called
+  from loadDashboard(). Task-007 status updated to completed.
+- .plans/tasks-github-wrapped-neo4j.yml (modified): task-007 status set to completed.
+
+Key Decisions:
+- loadPRVelocity uses WHERE pr.state = 'MERGED' to exclude unmerged PRs, and
+  duration.inSeconds(pr.createdAt, pr.mergedAt).seconds / 3600.0 for true total hours
+- Minimum 3 merged PRs filter (mergedCount >= 3) prevents single-PR outliers skewing velocity
+- loadLabelLeaderboard uses ORDER BY prCount DESC with inline bar chart showing
+  percentage relative to max count — visual leaderboard, not just a number table
+- loadCollabPairs shows authorLogin, reviewerLogin, and interaction count as required
+- All 7 functions use safeQuery() (spinner + error toast), not raw runQuery()
+
+Next Task: task-008 (Integrate NVL collaboration graph visualisation)

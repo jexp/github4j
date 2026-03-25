@@ -993,6 +993,316 @@
     }
 
     // ==========================================================================
+    // SUPPORTING STAT: TOP CONTRIBUTORS (by PRs opened)
+    // ==========================================================================
+
+    async function loadTopContributors() {
+      const containerId = 'contributors-content';
+      setLoading(containerId);
+
+      const cypher = `
+        MATCH (p:Person)-[:AUTHORED]->(pr:PullRequest)
+        WITH p.login AS login, COUNT(pr) AS prCount
+        RETURN login, prCount
+        ORDER BY prCount DESC
+        LIMIT 10
+      `;
+
+      const rows = await safeQuery(cypher, {});
+      if (!rows) { setError(containerId, 'Failed to load contributor stats.'); return; }
+      if (rows.length === 0) {
+        document.getElementById(containerId).innerHTML = `<div class="loading-placeholder"><div>No contributor data found.</div></div>`;
+        return;
+      }
+
+      const tableRows = rows.map((row, i) => `
+        <tr>
+          <td class="rank">#${i + 1}</td>
+          <td class="login">${escapeHtml(row.login)}</td>
+          <td class="stat-value" style="color:var(--accent)">${Number(row.prCount).toLocaleString()}</td>
+        </tr>`).join('');
+
+      document.getElementById(containerId).innerHTML = `
+        <table class="stat-table">
+          <thead><tr>
+            <th>Rank</th><th>Contributor</th><th style="text-align:right">PRs Opened</th>
+          </tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>`;
+    }
+
+    // ==========================================================================
+    // SUPPORTING STAT: TOP REVIEWERS (by review count)
+    // ==========================================================================
+
+    async function loadTopReviewers() {
+      const containerId = 'reviewers-content';
+      setLoading(containerId);
+
+      const cypher = `
+        MATCH (p:Person)-[r:REVIEWED]->(:PullRequest)
+        WITH p.login AS login, COUNT(r) AS reviewCount
+        RETURN login, reviewCount
+        ORDER BY reviewCount DESC
+        LIMIT 10
+      `;
+
+      const rows = await safeQuery(cypher, {});
+      if (!rows) { setError(containerId, 'Failed to load reviewer stats.'); return; }
+      if (rows.length === 0) {
+        document.getElementById(containerId).innerHTML = `<div class="loading-placeholder"><div>No reviewer data found.</div></div>`;
+        return;
+      }
+
+      const tableRows = rows.map((row, i) => `
+        <tr>
+          <td class="rank">#${i + 1}</td>
+          <td class="login">${escapeHtml(row.login)}</td>
+          <td class="stat-value" style="color:var(--accent4)">${Number(row.reviewCount).toLocaleString()}</td>
+        </tr>`).join('');
+
+      document.getElementById(containerId).innerHTML = `
+        <table class="stat-table">
+          <thead><tr>
+            <th>Rank</th><th>Reviewer</th><th style="text-align:right">Reviews Given</th>
+          </tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>`;
+    }
+
+    // ==========================================================================
+    // SUPPORTING STAT: HOTTEST FILES (by PR touch count via TOUCHES rels)
+    // ==========================================================================
+
+    async function loadHottestFiles() {
+      const containerId = 'files-content';
+      setLoading(containerId);
+
+      const cypher = `
+        MATCH (:PullRequest)-[:TOUCHES]->(f:File)
+        WITH f.path AS path, COUNT(*) AS touches
+        RETURN path, touches
+        ORDER BY touches DESC
+        LIMIT 10
+      `;
+
+      const rows = await safeQuery(cypher, {});
+      if (!rows) { setError(containerId, 'Failed to load file stats.'); return; }
+      if (rows.length === 0) {
+        document.getElementById(containerId).innerHTML = `
+          <div class="loading-placeholder" style="color:var(--muted)">
+            <div style="font-size:1.5rem;margin-bottom:0.5rem">🔥</div>
+            <div>No file-touch data available.<br>
+            <small>Import <code>06_files_touched.cypher</code> to enable this stat.</small></div>
+          </div>`;
+        return;
+      }
+
+      const tableRows = rows.map((row, i) => `
+        <tr>
+          <td class="rank">#${i + 1}</td>
+          <td style="font-family:var(--font-mono);font-size:0.8125rem;word-break:break-all">${escapeHtml(row.path)}</td>
+          <td class="stat-value" style="color:var(--accent2)">${Number(row.touches).toLocaleString()}</td>
+        </tr>`).join('');
+
+      document.getElementById(containerId).innerHTML = `
+        <table class="stat-table">
+          <thead><tr>
+            <th>Rank</th><th>File Path</th><th style="text-align:right">PRs Touched</th>
+          </tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>`;
+    }
+
+    // ==========================================================================
+    // SUPPORTING STAT: HOTTEST DIRECTORIES (by PR touch count)
+    // ==========================================================================
+
+    async function loadHottestDirs() {
+      const containerId = 'dirs-content';
+      setLoading(containerId);
+
+      const cypher = `
+        MATCH (:PullRequest)-[:TOUCHES]->(:File)-[:IN_DIR]->(d:Directory)
+        WITH d.path AS path, COUNT(*) AS touches
+        RETURN path, touches
+        ORDER BY touches DESC
+        LIMIT 10
+      `;
+
+      const rows = await safeQuery(cypher, {});
+      if (!rows) { setError(containerId, 'Failed to load directory stats.'); return; }
+      if (rows.length === 0) {
+        document.getElementById(containerId).innerHTML = `
+          <div class="loading-placeholder" style="color:var(--muted)">
+            <div style="font-size:1.5rem;margin-bottom:0.5rem">📁</div>
+            <div>No file-touch data available.<br>
+            <small>Import <code>06_files_touched.cypher</code> to enable this stat.</small></div>
+          </div>`;
+        return;
+      }
+
+      const tableRows = rows.map((row, i) => `
+        <tr>
+          <td class="rank">#${i + 1}</td>
+          <td style="font-family:var(--font-mono);font-size:0.8125rem;word-break:break-all">${escapeHtml(row.path || '(root)')}</td>
+          <td class="stat-value" style="color:var(--accent2)">${Number(row.touches).toLocaleString()}</td>
+        </tr>`).join('');
+
+      document.getElementById(containerId).innerHTML = `
+        <table class="stat-table">
+          <thead><tr>
+            <th>Rank</th><th>Directory</th><th style="text-align:right">PRs Touched</th>
+          </tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>`;
+    }
+
+    // ==========================================================================
+    // SUPPORTING STAT: PR VELOCITY (avg hours from open to merge, per author)
+    // Excludes unmerged PRs. Uses duration.inSeconds() to get true total hours.
+    // ==========================================================================
+
+    async function loadPRVelocity() {
+      const containerId = 'velocity-content';
+      setLoading(containerId);
+
+      const cypher = `
+        MATCH (p:Person)-[:AUTHORED]->(pr:PullRequest)
+        WHERE pr.state = 'MERGED' AND pr.mergedAt IS NOT NULL AND pr.createdAt IS NOT NULL
+        WITH p.login AS login,
+             AVG(duration.inSeconds(pr.createdAt, pr.mergedAt).seconds / 3600.0) AS avgHours,
+             COUNT(pr) AS mergedCount
+        WHERE mergedCount >= 3
+        RETURN login, round(avgHours * 10) / 10.0 AS avgHours, mergedCount
+        ORDER BY avgHours ASC
+        LIMIT 10
+      `;
+
+      const rows = await safeQuery(cypher, {});
+      if (!rows) { setError(containerId, 'Failed to load velocity stats.'); return; }
+      if (rows.length === 0) {
+        document.getElementById(containerId).innerHTML = `<div class="loading-placeholder"><div>No merged PR data found (requires at least 3 merged PRs per author).</div></div>`;
+        return;
+      }
+
+      const tableRows = rows.map((row, i) => {
+        const h = Number(row.avgHours);
+        const display = h < 24
+          ? `${h.toFixed(1)}h`
+          : `${(h / 24).toFixed(1)}d`;
+        return `
+          <tr>
+            <td class="rank">#${i + 1}</td>
+            <td class="login">${escapeHtml(row.login)}</td>
+            <td class="stat-value" style="color:var(--accent3)">${display}</td>
+            <td class="stat-value" style="color:var(--muted);font-size:0.8125rem">${Number(row.mergedCount)} PRs</td>
+          </tr>`;
+      }).join('');
+
+      document.getElementById(containerId).innerHTML = `
+        <p style="font-size:0.8125rem;color:var(--muted);margin-bottom:1rem">
+          Fastest mergers (avg hours from open → merge, min 3 merged PRs). Lower is faster.
+        </p>
+        <table class="stat-table">
+          <thead><tr>
+            <th>Rank</th><th>Author</th><th style="text-align:right">Avg Time to Merge</th><th style="text-align:right">PRs</th>
+          </tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>`;
+    }
+
+    // ==========================================================================
+    // SUPPORTING STAT: COLLABORATION PAIRS (author ↔ reviewer interaction count)
+    // ==========================================================================
+
+    async function loadCollabPairs() {
+      const containerId = 'pairs-content';
+      setLoading(containerId);
+
+      const cypher = `
+        MATCH (author:Person)-[:AUTHORED]->(pr:PullRequest)<-[:REVIEWED]-(reviewer:Person)
+        WHERE author <> reviewer
+        WITH author.login AS authorLogin, reviewer.login AS reviewerLogin, COUNT(pr) AS interactions
+        RETURN authorLogin, reviewerLogin, interactions
+        ORDER BY interactions DESC
+        LIMIT 10
+      `;
+
+      const rows = await safeQuery(cypher, {});
+      if (!rows) { setError(containerId, 'Failed to load collaboration stats.'); return; }
+      if (rows.length === 0) {
+        document.getElementById(containerId).innerHTML = `<div class="loading-placeholder"><div>No collaboration pair data found.</div></div>`;
+        return;
+      }
+
+      const tableRows = rows.map((row, i) => `
+        <tr>
+          <td class="rank">#${i + 1}</td>
+          <td class="login">${escapeHtml(row.authorLogin)}</td>
+          <td style="color:var(--muted);font-size:0.875rem;padding:0.75rem 0.5rem">→</td>
+          <td class="login" style="color:var(--accent4)">${escapeHtml(row.reviewerLogin)}</td>
+          <td class="stat-value" style="color:var(--accent)">${Number(row.interactions).toLocaleString()}</td>
+        </tr>`).join('');
+
+      document.getElementById(containerId).innerHTML = `
+        <table class="stat-table">
+          <thead><tr>
+            <th>Rank</th><th>Author</th><th></th><th>Reviewer</th><th style="text-align:right">Shared PRs</th>
+          </tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>`;
+    }
+
+    // ==========================================================================
+    // SUPPORTING STAT: LABEL LEADERBOARD (label name + PR count, descending)
+    // ==========================================================================
+
+    async function loadLabelLeaderboard() {
+      const containerId = 'labels-content';
+      setLoading(containerId);
+
+      const cypher = `
+        MATCH (pr:PullRequest)-[:HAS_LABEL]->(l:Label)
+        WITH l.name AS label, COUNT(DISTINCT pr) AS prCount
+        RETURN label, prCount
+        ORDER BY prCount DESC
+        LIMIT 15
+      `;
+
+      const rows = await safeQuery(cypher, {});
+      if (!rows) { setError(containerId, 'Failed to load label stats.'); return; }
+      if (rows.length === 0) {
+        document.getElementById(containerId).innerHTML = `<div class="loading-placeholder"><div>No label data found.</div></div>`;
+        return;
+      }
+
+      const max = Number(rows[0].prCount);
+      const barRows = rows.map((row, i) => {
+        const pct = max > 0 ? Math.round((Number(row.prCount) / max) * 100) : 0;
+        return `
+          <tr>
+            <td class="rank">#${i + 1}</td>
+            <td style="min-width:120px;font-weight:600">${escapeHtml(row.label)}</td>
+            <td style="width:100%;padding:0.75rem 0.75rem">
+              <div style="background:var(--surface2);border-radius:4px;overflow:hidden;height:18px">
+                <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent4));border-radius:4px;transition:width 0.6s ease"></div>
+              </div>
+            </td>
+            <td class="stat-value" style="color:var(--accent);white-space:nowrap">${Number(row.prCount).toLocaleString()}</td>
+          </tr>`;
+      }).join('');
+
+      document.getElementById(containerId).innerHTML = `
+        <table class="stat-table">
+          <thead><tr>
+            <th>Rank</th><th>Label</th><th>Distribution</th><th style="text-align:right">PRs</th>
+          </tr></thead>
+          <tbody>${barRows}</tbody>
+        </table>`;
+    }
+
+    // ==========================================================================
     // DASHBOARD LOADING
     // ==========================================================================
 
@@ -1004,24 +1314,14 @@
       loadGreatDeleter();
       loadBugSlayer();
 
-      // Supporting stats — placeholder stubs (task-007)
-      const pendingSections = [
-        'contributors-content',
-        'reviewers-content',
-        'files-content',
-        'dirs-content',
-        'velocity-content',
-        'pairs-content',
-        'labels-content',
-      ];
-
-      for (const id of pendingSections) {
-        document.getElementById(id).innerHTML = `
-          <div class="loading-placeholder" style="color:var(--accent3)">
-            <div style="font-size:1.25rem;margin-bottom:0.5rem">✓</div>
-            <div>Connected to AuraDB. Stats will load here (task-007).</div>
-          </div>`;
-      }
+      // Supporting stats (task-007) — fired in parallel, no await needed
+      loadTopContributors();
+      loadTopReviewers();
+      loadHottestFiles();
+      loadHottestDirs();
+      loadPRVelocity();
+      loadCollabPairs();
+      loadLabelLeaderboard();
 
       // Collaboration graph placeholder (task-008)
       document.getElementById('collab-graph').innerHTML = `

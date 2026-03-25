@@ -115,7 +115,7 @@ tasks:
       top reviewers by review count, top 10 hottest files, top 10 hottest directories, PR
       velocity (avg hours open-to-merge by author), collaboration pairs, and label leaderboard.
       Each renders as a styled card with a data table or ranked list.
-    status: pending
+    status: completed
     dependencies:
       - task-005
     acceptance_criteria:
@@ -123,7 +123,7 @@ tasks:
       - "PR velocity section calculates duration from createdAt to mergedAt (excludes unmerged PRs)"
       - "Collaboration pairs section shows author login, reviewer login, and interaction count"
       - "Label leaderboard shows label name and PR count, sorted descending"
-    completed_at: null
+    completed_at: "2026-03-25T23:00:00Z"
 
   - id: task-008
     title: "Integrate NVL collaboration graph visualisation"

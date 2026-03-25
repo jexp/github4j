@@ -96,3 +96,9 @@ For HTML/JS: Open in browser and check console for errors.
 - Great Deleter: uses TOUCHES rels — if not imported, query returns 0 rows → show friendly notice (not an error)
 - Bug Slayer: `toLower(l.name) = 'bug'` for case-insensitive label match; `COUNT(DISTINCT pr)` avoids double-counting
 - `loadDashboard()` calls `s.classList.add('visible')` on all sections immediately after login — hero stat fns fire in parallel via `loadGreatDeleter(); loadBugSlayer();` (not awaited)
+
+## Supporting stats pattern (task-007)
+- All 7 load functions use `safeQuery()` (not raw `runQuery()`) for spinner + error toast
+- PR velocity: `WHERE pr.state = 'MERGED'` excludes unmerged; `mergedCount >= 3` filter prevents outliers; display as `Xh` if < 24h else `Xd`
+- Label leaderboard renders an inline bar chart (width % relative to max) — more visual than a plain table
+- All 7 functions fired in parallel from `loadDashboard()` (no await) — sections update independently
