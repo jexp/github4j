@@ -1,0 +1,22 @@
+# AuraDB credentials — never commit
+Neo4j-*.txt
+*.env
+.env
+integration.env
+
+# OS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Node
+node_modules/

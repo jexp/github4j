@@ -1,0 +1,62 @@
+================================================================================
+TASK-001: Define graph schema and create AuraDB indexes
+Date: 2026-03-25T10:00:00Z
+================================================================================
+
+Summary:
+Created import/schema.cypher documenting the full property graph schema and
+containing all Cypher DDL to create uniqueness constraints and indexes on the
+AuraDB instance before data import.
+
+Files Changed:
+- import/schema.cypher (created): Full schema documentation + DDL with
+  uniqueness constraints for Person.login, Repo.repoId, PullRequest.prId,
+  File.fileId, Label.name, and a composite constraint on Directory(path,repoId).
+  Additional performance indexes on PullRequest.state, createdAt, mergedAt.
+  Ends with SHOW INDEXES for verification.
+
+Key Decisions:
+- Used IF NOT EXISTS on all constraints/indexes so the file is idempotent
+  (safe to re-run after partial failures)
+- Directory uses a composite (path, repoId) unique constraint since the same
+  directory path can exist across multiple repos
+- Added extra indexes on PR state and timestamps to support common query patterns
+  in the hero stats (e.g. filtering by state=MERGED)
+
+Next Task: task-002 (Write LOAD CSV import scripts for all 6 CSVs)
+
+================================================================================
+TASK-002: Write LOAD CSV import scripts for all 6 CSVs
+Date: 2026-03-25T13:00:00Z
+================================================================================
+
+Summary:
+Created 6 numbered Cypher LOAD CSV scripts in import/ covering the full import
+pipeline in dependency order: persons → repos → files → prs → reviews →
+files_touched. Each script is idempotent (MERGE not CREATE), handles all data
+type conversions, and ends with verification COUNT queries.
+
+Files Changed:
+- import/01_persons.cypher (created): MERGE Person nodes from persons.csv (348 rows)
+- import/02_repos.cypher (created): MERGE Repo nodes from repos.csv (14 rows)
+- import/03_files.cypher (created): MERGE File + Directory nodes, IN_DIR rels (52,996 files, 12,701 dirs)
+- import/04_prs.cypher (created): MERGE PullRequest + Label nodes; AUTHORED, IN_REPO, MERGED, HAS_LABEL rels (32,252 PRs, 538 labels)
+- import/05_reviews.cypher (created): MERGE Person nodes for reviewers; REVIEWED rels (92,721 rows)
+- import/06_files_touched.cypher (created): TOUCHES rels with additions/deletions (206,196 rows); includes capacity warning
+
+Key Decisions:
+- Split each import into multiple passes within one file (e.g., 04_prs.cypher
+  uses 3 separate LOAD CSV statements) to avoid complex single-query chains
+  that could hit memory limits on 32k+ rows
+- AuraDB capacity warning: full import creates ~507k rels (exceeds 400k Free
+  tier limit). 06_files_touched.cypher documents this explicitly with Option B
+  partial import (one-repo subset) as fallback
+- prs.csv labels split via SPLIT(row.labels, ';') + UNWIND + TRIM with
+  WHERE labelName <> '' guard to skip empty tokens
+- Boolean isDraft stored as (row.isDraft = 'true') expression
+- Nullable DateTime fields (mergedAt, closedAt) handled with CASE WHEN ... <> ''
+- reviews.csv MERGE on (reviewer, pr) pair means multiple reviews by same person
+  on same PR are collapsed to one relationship (last row wins); acceptable for
+  analytics (review count queries use CSV row counts anyway)
+
+Next Task: task-003 (Verify import with sanity-check Cypher queries)

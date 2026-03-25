@@ -1,0 +1,257 @@
+feature: github-wrapped-neo4j
+prd: ./prd-github-wrapped-neo4j.md
+created_at: 2026-03-25T00:00:00Z
+updated_at: 2026-03-25T00:00:00Z
+
+tasks:
+  - id: task-001
+    title: "Define graph schema and create AuraDB indexes"
+    description: |
+      Document the property graph schema for all node labels (Person, Repo, PullRequest,
+      File, Directory, Label) and relationship types with their properties. Write and run
+      Cypher statements to create uniqueness constraints and indexes on Person.login,
+      Repo.repoId, PullRequest.prId, and File.fileId against the AuraDB instance.
+    status: completed
+    dependencies: []
+    acceptance_criteria:
+      - "All 6 node labels defined with correct properties matching CSV columns"
+      - "All 7 relationship types defined with correct directionality and properties"
+      - "Indexes created and verified via SHOW INDEXES in AuraDB"
+      - "Schema documented in import/schema.cypher"
+    completed_at: "2026-03-25T10:00:00Z"
+
+  - id: task-002
+    title: "Write LOAD CSV import scripts for all 6 CSVs"
+    description: |
+      Write Cypher LOAD CSV scripts to import data in dependency order: persons → repos →
+      files → prs → reviews → files_touched. Each script uses MERGE to avoid duplicates,
+      sets all properties from CSV columns, and creates the correct relationships. Validate
+      row counts against AuraDB Free tier limits (≤200k nodes, ≤400k rels) before running.
+    status: completed
+    dependencies:
+      - task-001
+    acceptance_criteria:
+      - "All 6 import scripts in import/ directory, named 01_persons.cypher through 06_files_touched.cypher"
+      - "Each script uses MERGE not CREATE to be idempotent"
+      - "Labels from prs.csv semicolon-separated field split into individual Label nodes with HAS_LABEL relationships"
+      - "Node and relationship counts printed after import match expected CSV row counts"
+      - "Total node + relationship count within AuraDB Free tier limits"
+    completed_at: "2026-03-25T13:00:00Z"
+
+  - id: task-003
+    title: "Verify import with sanity-check Cypher queries"
+    description: |
+      Write a set of verification Cypher queries to confirm data integrity after import.
+      Checks include: node counts per label, relationship counts per type, sample path
+      traversals (e.g. person→PR→file), and the hero stat queries (Great Deleter, Bug Slayer)
+      returning non-empty results.
+    status: pending
+    dependencies:
+      - task-002
+    acceptance_criteria:
+      - "Verification queries in import/verify.cypher"
+      - "Great Deleter query returns at least 5 results with non-zero deletions"
+      - "Bug Slayer query returns results (bug-labelled merged PRs exist in data)"
+      - "Collaboration pairs query (AUTHORED + REVIEWED same PR) returns results"
+    completed_at: null
+
+  - id: task-004
+    title: "Build Aura Dashboard JSON configuration"
+    description: |
+      Create an Aura Dashboard JSON config file with at least 5 chart panels: top contributors
+      bar chart, PR merge rate over time (line chart), top reviewers, hottest files/directories,
+      and label distribution pie/bar chart. Each panel references a saved Cypher query against
+      the imported graph.
+    status: pending
+    dependencies:
+      - task-003
+    acceptance_criteria:
+      - "Dashboard JSON saved to dashboards/github-wrapped.json"
+      - "JSON imports into Aura Dashboards without errors"
+      - "All 5 panels render with real data from AuraDB"
+      - "Cypher queries in panels are parameterised"
+    completed_at: null
+
+  - id: task-005
+    title: "Build static web app scaffold with AuraDB credential config"
+    description: |
+      Create the single-page HTML app skeleton (docs/index.html) with a config panel that
+      prompts for AuraDB HTTP endpoint URL, username, and password on first load, stores them
+      in localStorage, and provides a helper function to POST parameterised Cypher queries
+      to the AuraDB HTTP transaction API via fetch(). Include loading state UI and error
+      handling for cold AuraDB starts.
+    status: pending
+    dependencies:
+      - task-003
+    acceptance_criteria:
+      - "Config panel appears when localStorage credentials are absent"
+      - "Credentials persisted to localStorage, not committed to repo"
+      - "runQuery(cypher, params) helper returns parsed rows or throws with a user-visible error"
+      - "Loading spinner shown while queries are in-flight"
+      - "Page works when served from GitHub Pages HTTPS"
+    completed_at: null
+
+  - id: task-006
+    title: "Implement hero stat sections: Great Deleter and Bug Slayer"
+    description: |
+      Add the two hero stat sections to the web app. Great Deleter shows a ranked list of
+      contributors by total lines deleted across all their PRs. Bug Slayer shows contributors
+      ranked by count of merged PRs with the 'bug' label. Both sections use large Wrapped-style
+      number display with the contributor's GitHub login and rank.
+    status: pending
+    dependencies:
+      - task-005
+    acceptance_criteria:
+      - "Great Deleter section renders top 10 contributors with line-deletion counts"
+      - "Bug Slayer section renders top 10 contributors with bug-fix PR counts"
+      - "Both sections animate in on load (CSS transition)"
+      - "Queries are parameterised (no string interpolation)"
+    completed_at: null
+
+  - id: task-007
+    title: "Implement supporting stats cards (7 sections)"
+    description: |
+      Add all 7 supporting stat sections to the web app: top contributors by PRs opened,
+      top reviewers by review count, top 10 hottest files, top 10 hottest directories, PR
+      velocity (avg hours open-to-merge by author), collaboration pairs, and label leaderboard.
+      Each renders as a styled card with a data table or ranked list.
+    status: pending
+    dependencies:
+      - task-005
+    acceptance_criteria:
+      - "All 7 sections present and rendering with live AuraDB data"
+      - "PR velocity section calculates duration from createdAt to mergedAt (excludes unmerged PRs)"
+      - "Collaboration pairs section shows author login, reviewer login, and interaction count"
+      - "Label leaderboard shows label name and PR count, sorted descending"
+    completed_at: null
+
+  - id: task-008
+    title: "Integrate NVL collaboration graph visualisation"
+    description: |
+      Add an interactive force-directed graph panel to the web app using @neo4j-nvl/base
+      (loaded via CDN or bundled). The panel visualises the top author↔reviewer collaboration
+      pairs as nodes (persons) and edges (reviewed relationships), sized by interaction count.
+      Container div must have explicit CSS height set.
+    status: pending
+    dependencies:
+      - task-007
+    acceptance_criteria:
+      - "NVL renders in a div with explicit height (not 0 or unset)"
+      - "Nodes represent Person logins; edges represent review relationships"
+      - "Node size or colour encodes interaction count or role (author vs reviewer)"
+      - "Graph is interactive: pan, zoom, hover shows login tooltip"
+      - "Layout uses forceDirected with disableTelemetry: true"
+    completed_at: null
+
+  - id: task-009
+    title: "Apply Wrapped-style visual design"
+    description: |
+      Apply the Spotify Wrapped-style visual treatment to the web app: dark background,
+      bold typography, large stat numbers, vibrant accent colours, and CSS transition
+      animations on section reveal (IntersectionObserver or scroll-triggered). Add a
+      shareable card concept (at minimum, clean visual sections that screenshot well).
+    status: pending
+    dependencies:
+      - task-006
+      - task-007
+      - task-008
+    acceptance_criteria:
+      - "Dark background (#0d1117 or similar) applied globally"
+      - "Hero numbers use large font (>4rem) with accent colour"
+      - "Sections animate in as user scrolls (opacity + translateY transition)"
+      - "Page looks good at 1440px width desktop viewport"
+    completed_at: null
+
+  - id: task-010
+    title: "Deploy web app to GitHub Pages"
+    description: |
+      Configure the repository so the web app in docs/ is served via GitHub Pages over HTTPS.
+      Verify that the AuraDB HTTP API is reachable from the GitHub Pages origin (CORS check).
+      Document the public URL and any required AuraDB CORS allowlist configuration.
+    status: pending
+    dependencies:
+      - task-009
+    acceptance_criteria:
+      - "GitHub Pages HTTPS URL is publicly accessible"
+      - "All stat sections load with real data (no CORS errors in browser console)"
+      - "Public URL documented in README"
+    completed_at: null
+
+  - id: task-011
+    title: "Build GDS notebook: graph projection and Louvain community detection"
+    description: |
+      Create notebooks/github_gds.ipynb and set up the project with uv (pyproject.toml).
+      Connect to AuraDB using neo4j-rust-ext and the graphdatascience client. Project a
+      person-to-person collaboration graph (persons who co-appear on the same PR as
+      author+reviewer). Run Louvain community detection and write community IDs back to
+      Person nodes in AuraDB.
+    status: pending
+    dependencies:
+      - task-003
+    acceptance_criteria:
+      - "pyproject.toml present with uv-managed deps: neo4j-rust-ext, graphdatascience, neo4j-viz[notebook], jupyter"
+      - "Notebook connects to AuraDB via environment variable credentials (not hardcoded)"
+      - "GDS graph projection created from AUTHORED + REVIEWED relationships"
+      - "Louvain runs and produces community IDs"
+      - "Community IDs written back to Person.community property in AuraDB"
+      - "Cell outputs show community count and size distribution"
+    completed_at: null
+
+  - id: task-012
+    title: "Build GDS notebook: PageRank, team comparison, and neo4j-viz visualisation"
+    description: |
+      Extend the GDS notebook with: PageRank on the collaboration graph to identify central
+      reviewers; a community vs. team-label comparison that computes an overlap/accuracy metric
+      (e.g. Jaccard or majority-label accuracy per community); and a neo4j-viz VisualizationGraph
+      rendering the community graph coloured by community. Export community assignments to
+      notebooks/community_assignments.csv.
+    status: pending
+    dependencies:
+      - task-011
+    acceptance_criteria:
+      - "PageRank scores computed and top 10 central reviewers printed"
+      - "Team labels extracted from PullRequest HAS_LABEL relationships per person"
+      - "Overlap metric printed with explanation (e.g. '72% of community 3 members share team-kernel label')"
+      - "neo4j-viz graph renders inline in notebook with nodes coloured by community"
+      - "community_assignments.csv exported with columns: login, community, pagerank_score"
+    completed_at: null
+
+  - id: task-013
+    title: "Build MCP server with Neo4j query tools"
+    description: |
+      Create mcp_server/main.py as a FastAPI app (managed with uv) implementing 6 MCP-compatible
+      tools. Use neo4j-rust-ext as the Neo4j driver. Tools: get_top_contributors,
+      get_collaboration_pairs, get_hottest_files, get_pr_velocity, search_person, and
+      get_community_summary. AuraDB credentials loaded from environment variables. OpenAPI spec
+      auto-generated at /openapi.json.
+    status: pending
+    dependencies:
+      - task-003
+      - task-012
+    acceptance_criteria:
+      - "mcp_server/pyproject.toml with uv-managed deps: neo4j-rust-ext, fastapi, uvicorn"
+      - "All 6 tools implemented and return correctly structured JSON"
+      - "get_top_contributors accepts metric='prs'|'deletions'|'bug_fixes' and limit"
+      - "get_community_summary uses Person.community property (requires task-011 complete)"
+      - "All Cypher queries parameterised — no f-string or string concatenation with user input"
+      - "/openapi.json returns valid OAS 3.0 spec"
+      - "Server starts with uv run uvicorn and responds to requests locally"
+    completed_at: null
+
+  - id: task-014
+    title: "Deploy MCP server to Vercel or Railway"
+    description: |
+      Deploy the FastAPI MCP server to Vercel (using vercel.json + @vercel/python runtime) or
+      Railway (using railway.toml / Procfile). Configure AuraDB credentials as environment
+      variables in the hosting platform. Verify all 6 tools are reachable over the public
+      HTTPS URL with a smoke-test curl or Claude tool call.
+    status: pending
+    dependencies:
+      - task-013
+    acceptance_criteria:
+      - "Public HTTPS URL returns 200 on GET /"
+      - "GET /openapi.json returns valid spec from public URL"
+      - "All 6 tools return correct data when called via the public URL"
+      - "No AuraDB credentials in any committed file"
+      - "Public MCP URL documented in README"
+    completed_at: null
