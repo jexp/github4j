@@ -198,8 +198,62 @@ def run_verify(driver):
             ORDER BY prCount DESC LIMIT 10
         """))
 
-        # ── Section 7: Data integrity ─────────────────────────────────────────
-        header("8 · Data integrity")
+        # ── Section 7: Graph Type constraints ────────────────────────────────
+        header("7 · Graph Type schema constraints")
+
+        constraints = q(s, """
+            SHOW CONSTRAINTS YIELD name, type, labelsOrTypes, properties
+            RETURN name, type, labelsOrTypes, properties
+            ORDER BY type, name
+        """)
+        if constraints:
+            fmt_table(constraints)
+            ok(f"{len(constraints)} constraints active (from Graph Type + indexes)")
+        else:
+            fail("No constraints found — was ALTER CURRENT GRAPH TYPE SET run?")
+
+        # Property type checks using valueType() — samples 100 nodes per label
+        # valueType() returns e.g. 'INTEGER NOT NULL', 'ZONED DATETIME NOT NULL', 'STRING NOT NULL'
+        header("7b · Property datatype verification (valueType)")
+
+        type_checks = [
+            # (label, property, expected_type_substring, sample_cypher)
+            ("Person",      "login",       "STRING",        "MATCH (n:Person) WHERE n.login IS NOT NULL RETURN n.login AS v LIMIT 100"),
+            ("Repo",        "repoId",      "STRING",        "MATCH (n:Repo) WHERE n.repoId IS NOT NULL RETURN n.repoId AS v LIMIT 100"),
+            ("PullRequest", "prId",        "STRING",        "MATCH (n:PullRequest) WHERE n.prId IS NOT NULL RETURN n.prId AS v LIMIT 100"),
+            ("PullRequest", "additions",   "INTEGER",       "MATCH (n:PullRequest) WHERE n.additions IS NOT NULL RETURN n.additions AS v LIMIT 100"),
+            ("PullRequest", "deletions",   "INTEGER",       "MATCH (n:PullRequest) WHERE n.deletions IS NOT NULL RETURN n.deletions AS v LIMIT 100"),
+            ("PullRequest", "isDraft",     "BOOLEAN",       "MATCH (n:PullRequest) WHERE n.isDraft IS NOT NULL RETURN n.isDraft AS v LIMIT 100"),
+            ("PullRequest", "createdAt",   "ZONED DATETIME","MATCH (n:PullRequest) WHERE n.createdAt IS NOT NULL RETURN n.createdAt AS v LIMIT 100"),
+            ("PullRequest", "mergedAt",    "ZONED DATETIME","MATCH (n:PullRequest) WHERE n.mergedAt IS NOT NULL RETURN n.mergedAt AS v LIMIT 100"),
+            ("File",        "fileId",      "STRING",        "MATCH (n:File) WHERE n.fileId IS NOT NULL RETURN n.fileId AS v LIMIT 100"),
+            ("Label",       "name",        "STRING",        "MATCH (n:Label) WHERE n.name IS NOT NULL RETURN n.name AS v LIMIT 100"),
+            ("REVIEWED",    "submittedAt", "ZONED DATETIME","MATCH ()-[r:REVIEWED]-() WHERE r.submittedAt IS NOT NULL RETURN r.submittedAt AS v LIMIT 100"),
+            ("REVIEWED",    "commentCount","INTEGER",       "MATCH ()-[r:REVIEWED]-() WHERE r.commentCount IS NOT NULL RETURN r.commentCount AS v LIMIT 100"),
+        ]
+
+        for label, prop, expected_type, sample_cypher in type_checks:
+            rows = q(s, sample_cypher.replace("RETURN n.", "WITH n RETURN n.").replace("RETURN r.", "WITH r RETURN r.") if False else sample_cypher)
+            if not rows:
+                info(f"{label}.{prop}: no data to check")
+                continue
+            # Use valueType() to check the actual stored type
+            type_rows = q(s, f"""
+                WITH $vals AS values
+                UNWIND values AS v
+                WITH valueType(v) AS t
+                RETURN t, count(*) AS cnt
+                ORDER BY cnt DESC
+            """, vals=[r["v"] for r in rows])
+            types_found = {r["t"] for r in type_rows}
+            wrong = [t for t in types_found if expected_type not in t and t != "NULL"]
+            if wrong:
+                fail(f"{label}.{prop}: unexpected types {wrong}  (expected {expected_type})")
+            else:
+                ok(f"{label}.{prop}: {types_found}  ✓")
+
+        # ── Section 8: Data integrity ─────────────────────────────────────────
+        header("9 · Data integrity")
         check_zero("PRs with no author",  q(s, "MATCH (pr:PullRequest) WHERE NOT ()-[:AUTHORED]->(pr) RETURN count(pr) AS c")[0]["c"])
         check_zero("PRs with no repo",    q(s, "MATCH (pr:PullRequest) WHERE NOT (pr)-[:IN_REPO]->()  RETURN count(pr) AS c")[0]["c"])
         check_zero("Duplicate prIds",     q(s, "MATCH (pr:PullRequest) WITH pr.prId AS id, count(*) AS c WHERE c > 1 RETURN count(*) AS c")[0]["c"])
@@ -210,7 +264,7 @@ def run_verify(driver):
         fmt_table(q(s, "MATCH (pr:PullRequest) RETURN pr.state AS state, count(*) AS cnt ORDER BY cnt DESC"))
 
         # ── Section 8: Scale check ────────────────────────────────────────────
-        header("9 · AuraDB Free tier scale check")
+        header("10 · AuraDB Free tier scale check")
         total_nodes = q(s, "MATCH (n) RETURN count(n) AS c")[0]["c"]
         total_rels  = q(s, "MATCH ()-[r]->() RETURN count(r) AS c")[0]["c"]
         check_count("Total nodes",         total_nodes, 0, 200_000)

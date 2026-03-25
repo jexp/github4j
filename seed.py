@@ -52,19 +52,76 @@ def seed(driver):
     with driver.session(database="neo4j") as s:
 
         # ----------------------------------------------------------------
-        # Schema — constraints and indexes
+        # Schema — Graph Type + indexes
         # ----------------------------------------------------------------
-        print("Creating constraints and indexes...")
+        print("Defining Graph Type schema (ALTER CURRENT GRAPH TYPE SET)...")
 
-        ddl = [
-            # Uniqueness constraints (also create backing RANGE indexes)
-            "CREATE CONSTRAINT person_login_unique IF NOT EXISTS FOR (p:Person) REQUIRE p.login IS UNIQUE",
-            "CREATE CONSTRAINT repo_repoId_unique IF NOT EXISTS FOR (r:Repo) REQUIRE r.repoId IS UNIQUE",
-            "CREATE CONSTRAINT pr_prId_unique IF NOT EXISTS FOR (pr:PullRequest) REQUIRE pr.prId IS UNIQUE",
-            "CREATE CONSTRAINT file_fileId_unique IF NOT EXISTS FOR (f:File) REQUIRE f.fileId IS UNIQUE",
-            "CREATE CONSTRAINT label_name_unique IF NOT EXISTS FOR (l:Label) REQUIRE l.name IS UNIQUE",
-            "CREATE CONSTRAINT directory_path_repoId_unique IF NOT EXISTS FOR (d:Directory) REQUIRE (d.path, d.repoId) IS UNIQUE",
-            # RANGE indexes — timeseries and numeric
+        # Graph Type: enforces property types and key constraints automatically.
+        # Requires Neo4j 2026.02+ / AuraDB with Cypher 25.
+        s.run("""
+            ALTER CURRENT GRAPH TYPE SET {
+                (p:Person => {
+                    login :: STRING NOT NULL IS KEY,
+                    url   :: STRING
+                }),
+                (r:Repo => {
+                    repoId :: STRING NOT NULL IS KEY,
+                    owner  :: STRING,
+                    name   :: STRING,
+                    url    :: STRING
+                }),
+                (pr:PullRequest => {
+                    prId         :: STRING NOT NULL IS KEY,
+                    number       :: INTEGER,
+                    title        :: STRING,
+                    url          :: STRING,
+                    state        :: STRING,
+                    isDraft      :: BOOLEAN,
+                    createdAt    :: ZONED DATETIME,
+                    mergedAt     :: ZONED DATETIME,
+                    closedAt     :: ZONED DATETIME,
+                    additions    :: INTEGER,
+                    deletions    :: INTEGER,
+                    changedFiles :: INTEGER,
+                    baseRefName  :: STRING,
+                    commentCount :: INTEGER,
+                    titleEmbedding :: LIST<FLOAT>
+                }),
+                (f:File => {
+                    fileId    :: STRING NOT NULL IS KEY,
+                    path      :: STRING,
+                    filename  :: STRING,
+                    directory :: STRING,
+                    url       :: STRING
+                }),
+                (d:Directory => {
+                    path   :: STRING NOT NULL,
+                    repoId :: STRING NOT NULL
+                })
+                  REQUIRE (d.path, d.repoId) IS KEY,
+                (l:Label => {
+                    name :: STRING NOT NULL IS KEY
+                }),
+                (:Person)-[:AUTHORED]->(:PullRequest),
+                (:Person)-[:REVIEWED => {
+                    state        :: STRING,
+                    submittedAt  :: ZONED DATETIME,
+                    commentCount :: INTEGER
+                }]->(:PullRequest),
+                (:Person)-[:MERGED]->(:PullRequest),
+                (:PullRequest)-[:IN_REPO]->(:Repo),
+                (:PullRequest)-[:TOUCHES => {
+                    additions :: INTEGER,
+                    deletions :: INTEGER
+                }]->(:File),
+                (:File)-[:IN_DIR]->(:Directory),
+                (:PullRequest)-[:HAS_LABEL]->(:Label)
+            }
+        """)
+        print("  Graph Type defined ✓")
+
+        print("Creating RANGE, TEXT, FULLTEXT, VECTOR indexes...")
+        for stmt in [
             "CREATE RANGE INDEX pr_createdAt IF NOT EXISTS FOR (pr:PullRequest) ON (pr.createdAt)",
             "CREATE RANGE INDEX pr_mergedAt  IF NOT EXISTS FOR (pr:PullRequest) ON (pr.mergedAt)",
             "CREATE RANGE INDEX pr_closedAt  IF NOT EXISTS FOR (pr:PullRequest) ON (pr.closedAt)",
@@ -72,25 +129,20 @@ def seed(driver):
             "CREATE RANGE INDEX pr_deletions IF NOT EXISTS FOR (pr:PullRequest) ON (pr.deletions)",
             "CREATE RANGE INDEX pr_state     IF NOT EXISTS FOR (pr:PullRequest) ON (pr.state)",
             "CREATE RANGE INDEX reviewed_submittedAt IF NOT EXISTS FOR ()-[r:REVIEWED]-() ON (r.submittedAt)",
-            # TEXT indexes — string pattern matching (CONTAINS / STARTS WITH)
             "CREATE TEXT INDEX pr_title_text      IF NOT EXISTS FOR (pr:PullRequest) ON (pr.title)",
             "CREATE TEXT INDEX file_path_text     IF NOT EXISTS FOR (f:File) ON (f.path)",
             "CREATE TEXT INDEX file_filename_text IF NOT EXISTS FOR (f:File) ON (f.filename)",
             "CREATE TEXT INDEX person_login_text  IF NOT EXISTS FOR (p:Person) ON (p.login)",
             "CREATE TEXT INDEX label_name_text    IF NOT EXISTS FOR (l:Label) ON (l.name)",
-            # FULLTEXT indexes — free-text search
-            "CREATE FULLTEXT INDEX pr_title_fulltext    IF NOT EXISTS FOR (n:PullRequest) ON EACH [n.title]",
-            "CREATE FULLTEXT INDEX file_path_fulltext   IF NOT EXISTS FOR (n:File) ON EACH [n.path, n.filename]",
+            "CREATE FULLTEXT INDEX pr_title_fulltext     IF NOT EXISTS FOR (n:PullRequest) ON EACH [n.title]",
+            "CREATE FULLTEXT INDEX file_path_fulltext    IF NOT EXISTS FOR (n:File) ON EACH [n.path, n.filename]",
             "CREATE FULLTEXT INDEX person_login_fulltext IF NOT EXISTS FOR (n:Person) ON EACH [n.login]",
-            # VECTOR index — semantic similarity on PR title embeddings (populated separately)
             """CREATE VECTOR INDEX pr_title_vector IF NOT EXISTS
                FOR (pr:PullRequest) ON (pr.titleEmbedding)
                OPTIONS {indexConfig: {`vector.dimensions`: 1536, `vector.similarity_function`: 'cosine'}}""",
-        ]
-
-        for stmt in ddl:
+        ]:
             s.run(stmt)
-        print("  Constraints + RANGE + TEXT + FULLTEXT + VECTOR indexes OK ✓")
+        print("  RANGE + TEXT + FULLTEXT + VECTOR indexes OK ✓")
 
         # ----------------------------------------------------------------
         # 1. Persons
