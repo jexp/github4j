@@ -134,3 +134,13 @@ This applies especially to NVL, neo4j-rust-ext, uv, and any other tool the user 
 - App uses Neo4j JS driver Bolt over `wss://` — Bolt/WebSocket is NOT subject to HTTP CORS policy
 - No AuraDB allowlist configuration needed; CORS notes are irrelevant for Bolt connections
 - Verify GitHub Pages config via: `gh api repos/{owner}/{repo}/pages` — shows build status, html_url, source
+
+## GDS notebook pattern (task-011)
+- `graphdatascience` version 1.20 installed; `uv sync --extra notebook` installs all notebook deps
+- `gds.graph.cypher.project(query, database=db, **params)` — single Cypher query ending with `RETURN gds.graph.project($graphName, sourceNode, targetNode, dataConfig)`. Params (e.g. `graphName=GRAPH_NAME`) passed as kwargs.
+- `gds.graph.exists(name)` returns a **pandas Series**; check `result['exists']` (not `.exists` attribute)
+- `gds.graph.drop(g)` accepts a `Graph` object returned by `cypher.project()` or `gds.graph.get(name)`
+- Louvain API: `gds.louvain.mutate(G, mutateProperty='community', ...)`, `gds.louvain.stream(G, ...)`, `gds.louvain.write(G, writeProperty='community', ...)` — all accept keyword config args, not a dict
+- `louvain.write()` re-runs Louvain and writes to AuraDB; `louvain.mutate()` stores only in-memory
+- For undirected Cypher projection: use `WHERE id(a) < id(b)` to avoid duplicate pairs + `undirectedRelationshipTypes` in dataConfig
+- No `python-dotenv` needed: use inline `_load_env_file()` helper scanning cwd and parent for integration.env

@@ -294,3 +294,36 @@ Key Decisions:
   cert expires 2026-05-19) — verified 200 OK via curl
 
 Next Task: task-011 (Build GDS notebook: graph projection and Louvain community detection)
+================================================================================
+TASK-011: Build GDS notebook: graph projection and Louvain community detection
+Date: 2026-03-25T12:00:00Z
+================================================================================
+Summary: Created notebooks/github_gds.ipynb with 22 cells covering the full
+GDS workflow: env loading without dotenv dep, GDS connection via environment
+variables, data exploration, Cypher aggregation projection of person-to-person
+collaboration graph, Louvain community detection (mutate → stream → write), 
+community size distribution histogram, write-back verification, and cleanup.
+pyproject.toml already had all required notebook extras (graphdatascience,
+neo4j-viz[notebook], jupyter, pandas with neo4j-rust-ext as base dep).
+
+Files Changed:
+- notebooks/github_gds.ipynb (created — full GDS workflow notebook, 22 cells)
+- .plans/tasks-github-wrapped-neo4j.yml (modified — task-011 status set to completed)
+
+Key Decisions:
+- Used inline _load_env_file() helper instead of python-dotenv to avoid adding a
+  new dependency; searches cwd and parent for integration.env without overriding
+  existing env vars
+- graphdatascience 1.20 API: gds.graph.cypher.project() takes a single Cypher
+  query ending with RETURN gds.graph.project($graphName, sourceNode, targetNode,
+  dataConfig) — NOT separate node/rel query arguments
+- gds.graph.exists() returns a pandas Series; check ['exists'] key (not .exists)
+- gds.graph.drop() accepts a Graph object directly (not just a name string)
+- gds.louvain.mutate/stream/write are properties returning AlgoEndpoints runners,
+  called as gds.louvain.mutate(G, **kwargs) — not gds.louvain.mutate(G, {})
+- WHERE id(author) < id(reviewer) in projection query avoids duplicate undirected
+  edges; gds.graph.project undirectedRelationshipTypes handles bidirectionality
+- louvain.write() re-runs Louvain and writes to AuraDB; louvain.mutate() only
+  stores in in-memory projected graph (used for distribution analysis first)
+
+Next Task: task-012 (Build GDS notebook: PageRank, team comparison, and neo4j-viz visualisation)

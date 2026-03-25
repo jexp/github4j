@@ -185,7 +185,7 @@ tasks:
       person-to-person collaboration graph (persons who co-appear on the same PR as
       author+reviewer). Run Louvain community detection and write community IDs back to
       Person nodes in AuraDB.
-    status: pending
+    status: completed
     dependencies:
       - task-003
     acceptance_criteria:
@@ -195,7 +195,7 @@ tasks:
       - "Louvain runs and produces community IDs"
       - "Community IDs written back to Person.community property in AuraDB"
       - "Cell outputs show community count and size distribution"
-    completed_at: null
+    completed_at: "2026-03-25T12:00:00Z"
 
   - id: task-012
     title: "Build GDS notebook: PageRank, team comparison, and neo4j-viz visualisation"
