@@ -85,7 +85,8 @@ def seed(driver):
                     deletions    :: INTEGER,
                     changedFiles :: INTEGER,
                     baseRefName  :: STRING,
-                    commentCount :: INTEGER
+                    commentCount   :: INTEGER,
+                    titleEmbedding :: VECTOR<FLOAT>(1536)
                 }),
                 (f:File => {
                     fileId    :: STRING NOT NULL IS KEY,

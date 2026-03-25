@@ -43,9 +43,8 @@ ALTER CURRENT GRAPH TYPE SET {
         deletions    :: INTEGER,
         changedFiles :: INTEGER,
         baseRefName  :: STRING,
-        commentCount :: INTEGER
-        // titleEmbedding :: LIST<FLOAT> omitted — LIST<FLOAT> not supported
-        // in graph type constraints; the VECTOR index covers this property
+        commentCount   :: INTEGER,
+        titleEmbedding :: VECTOR<FLOAT>(1536)
     }),
 
     // File — identified by fileId
