@@ -150,7 +150,7 @@ tasks:
       bold typography, large stat numbers, vibrant accent colours, and CSS transition
       animations on section reveal (IntersectionObserver or scroll-triggered). Add a
       shareable card concept (at minimum, clean visual sections that screenshot well).
-    status: pending
+    status: completed
     dependencies:
       - task-006
       - task-007
@@ -160,7 +160,7 @@ tasks:
       - "Hero numbers use large font (>4rem) with accent colour"
       - "Sections animate in as user scrolls (opacity + translateY transition)"
       - "Page looks good at 1440px width desktop viewport"
-    completed_at: null
+    completed_at: "2026-03-26T03:00:00Z"
 
   - id: task-010
     title: "Deploy web app to GitHub Pages"

@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GitHub Wrapped — Neo4j</title>
+  <!-- Google Fonts: bold display font for hero numbers -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;800;900&display=swap" rel="stylesheet" />
 
   <!-- Import map: resolves @neo4j-nvl/base to the bundled ESM on unpkg -->
   <script type="importmap">
@@ -109,10 +113,12 @@
       --accent2: #f78166;
       --accent3: #56d364;
       --accent4: #d2a8ff;
+      --accent5: #ffa657;
       --text: #e6edf3;
       --muted: #8b949e;
       --danger: #f85149;
       --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      --font-display: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
 
     html { scroll-behavior: smooth; }
@@ -120,7 +126,7 @@
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      font-family: var(--font-display);
       font-size: 16px;
       line-height: 1.5;
       min-height: 100vh;
@@ -294,37 +300,61 @@
     /* ===== Main Layout ===== */
     header {
       text-align: center;
-      padding: 4rem 1rem 2rem;
+      padding: 5rem 1rem 3rem;
       border-bottom: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(88,166,255,0.06) 0%, transparent 100%);
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(88,166,255,0.18) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 80% 80%, rgba(210,168,255,0.08) 0%, transparent 60%),
+        var(--bg);
+      position: relative;
+      overflow: hidden;
+    }
+
+    header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2358a6ff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      pointer-events: none;
     }
 
     header .eyebrow {
       font-size: 0.75rem;
       font-weight: 700;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.15em;
       text-transform: uppercase;
       color: var(--accent);
-      margin-bottom: 0.75rem;
+      margin-bottom: 1rem;
+      position: relative;
+    }
+
+    header .eyebrow::before,
+    header .eyebrow::after {
+      content: '——';
+      margin: 0 0.6em;
+      opacity: 0.4;
     }
 
     header h1 {
-      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-family: var(--font-display);
+      font-size: clamp(3rem, 8vw, 6rem);
       font-weight: 900;
-      letter-spacing: -0.03em;
-      line-height: 1.1;
-      background: linear-gradient(135deg, var(--accent) 0%, var(--accent4) 60%, var(--accent2) 100%);
+      letter-spacing: -0.04em;
+      line-height: 1;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent4) 50%, var(--accent2) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      margin-bottom: 1rem;
+      margin-bottom: 1.25rem;
+      position: relative;
     }
 
     header p {
       color: var(--muted);
       font-size: 1.125rem;
-      max-width: 480px;
-      margin: 0 auto 1.5rem;
+      max-width: 520px;
+      margin: 0 auto 2rem;
+      position: relative;
     }
 
     #settings-btn {
@@ -333,26 +363,47 @@
       color: var(--muted);
       border-radius: 6px;
       font-size: 0.8125rem;
+      font-family: var(--font-display);
       padding: 0.4rem 0.875rem;
       cursor: pointer;
       transition: color 0.15s, border-color 0.15s;
+      position: relative;
     }
 
     #settings-btn:hover { color: var(--text); border-color: var(--muted); }
 
     /* ===== Content Area ===== */
     #app {
-      max-width: 1200px;
+      max-width: 1440px;
       margin: 0 auto;
-      padding: 3rem 1.5rem 6rem;
+      padding: 3rem 2rem 6rem;
+    }
+
+    /* ===== Two-column grid for supporting stat sections at wide viewports ===== */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+
+    @media (min-width: 900px) {
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0 2rem;
+      }
+
+      /* Span full width for the graph section */
+      .stats-grid .section-full {
+        grid-column: 1 / -1;
+      }
     }
 
     /* ===== Section Styles ===== */
     .section {
-      margin-bottom: 4rem;
+      margin-bottom: 3rem;
       opacity: 0;
-      transform: translateY(32px);
-      transition: opacity 0.5s ease, transform 0.5s ease;
+      transform: translateY(36px);
+      transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .section.visible {
@@ -360,38 +411,62 @@
       transform: translateY(0);
     }
 
+    /* Staggered animation delays for grid children */
+    .stats-grid .section:nth-child(2n) { transition-delay: 0.08s; }
+
+    /* Hero sections get extra bottom margin */
+    .section-hero { margin-bottom: 3.5rem; }
+
     .section-header {
       display: flex;
-      align-items: baseline;
+      align-items: center;
       gap: 0.75rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.25rem;
     }
 
     .section-header h2 {
-      font-size: 1.5rem;
+      font-family: var(--font-display);
+      font-size: 1.375rem;
       font-weight: 800;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.025em;
     }
 
     .section-header .badge {
-      font-size: 0.7rem;
+      font-size: 0.65rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      padding: 0.2rem 0.5rem;
-      border-radius: 4px;
-      background: rgba(88, 166, 255, 0.15);
+      padding: 0.2rem 0.55rem;
+      border-radius: 20px;
+      background: rgba(88, 166, 255, 0.12);
       color: var(--accent);
+      border: 1px solid rgba(88, 166, 255, 0.2);
+    }
+
+    .section-header .badge-orange {
+      background: rgba(247, 129, 102, 0.12);
+      color: var(--accent2);
+      border-color: rgba(247, 129, 102, 0.2);
+    }
+
+    .section-header .badge-green {
+      background: rgba(86, 211, 100, 0.12);
+      color: var(--accent3);
+      border-color: rgba(86, 211, 100, 0.2);
+    }
+
+    .section-header .badge-purple {
+      background: rgba(210, 168, 255, 0.12);
+      color: var(--accent4);
+      border-color: rgba(210, 168, 255, 0.2);
     }
 
     /* ===== Loading Placeholder ===== */
     .loading-placeholder {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 3rem;
+      padding: 2.5rem;
       text-align: center;
       color: var(--muted);
+      font-size: 0.9375rem;
     }
 
     .loading-placeholder .spinner-icon {
@@ -404,9 +479,43 @@
     .hero-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 16px;
       padding: 2rem;
+      position: relative;
+      overflow: hidden;
     }
+
+    /* Accent glow blob behind hero cards */
+    .hero-card::before {
+      content: '';
+      position: absolute;
+      top: -40%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      opacity: 0.06;
+      pointer-events: none;
+      background: var(--card-glow, var(--accent));
+      filter: blur(60px);
+    }
+
+    .hero-card-orange { --card-glow: var(--accent2); border-color: rgba(247,129,102,0.2); }
+    .hero-card-green  { --card-glow: var(--accent3); border-color: rgba(86,211,100,0.2); }
+    .hero-card-blue   { --card-glow: var(--accent);  border-color: rgba(88,166,255,0.2); }
+    .hero-card-purple { --card-glow: var(--accent4); border-color: rgba(210,168,255,0.2); }
+
+    /* Stat cards (non-hero): more compact */
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      transition: border-color 0.2s;
+    }
+
+    .stat-card:hover { border-color: rgba(88,166,255,0.25); }
 
     /* ===== Stat Table ===== */
     .stat-table {
@@ -416,32 +525,40 @@
 
     .stat-table th {
       text-align: left;
-      font-size: 0.75rem;
-      font-weight: 600;
+      font-family: var(--font-display);
+      font-size: 0.6875rem;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.1em;
       color: var(--muted);
       padding: 0 0.75rem 0.75rem;
       border-bottom: 1px solid var(--border);
     }
 
     .stat-table td {
-      padding: 0.75rem;
-      border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+      padding: 0.7rem 0.75rem;
+      border-bottom: 1px solid rgba(48, 54, 61, 0.4);
       font-size: 0.9375rem;
+      transition: background 0.15s;
     }
 
+    .stat-table tbody tr:hover td { background: rgba(88,166,255,0.03); }
     .stat-table tr:last-child td { border-bottom: none; }
 
     .rank {
       color: var(--muted);
-      font-size: 0.8125rem;
+      font-size: 0.75rem;
       font-family: var(--font-mono);
       width: 2.5rem;
     }
 
+    /* Top-3 rank highlight */
+    .stat-table tbody tr:nth-child(1) .rank { color: #ffd700; font-weight: 700; }
+    .stat-table tbody tr:nth-child(2) .rank { color: #c0c0c0; font-weight: 700; }
+    .stat-table tbody tr:nth-child(3) .rank { color: #cd7f32; font-weight: 700; }
+
     .login {
-      font-weight: 600;
+      font-weight: 700;
       color: var(--accent);
     }
 
@@ -449,58 +566,83 @@
       font-family: var(--font-mono);
       font-size: 0.9375rem;
       text-align: right;
-      font-weight: 600;
+      font-weight: 700;
     }
 
     /* ===== Hero Number Block (Great Deleter / Bug Slayer) ===== */
     .hero-number-block {
       text-align: center;
-      padding: 1.5rem 1rem 1rem;
+      padding: 2rem 1rem 1.25rem;
+      position: relative;
+      z-index: 1;
     }
 
     .hero-rank {
-      font-size: 0.875rem;
+      display: inline-block;
+      font-size: 0.75rem;
       font-weight: 700;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.15em;
       text-transform: uppercase;
       color: var(--muted);
-      margin-bottom: 0.4rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 0.2rem 0.7rem;
+      margin-bottom: 0.75rem;
     }
 
     .hero-login {
-      font-size: 1.5rem;
+      font-family: var(--font-display);
+      font-size: clamp(1.375rem, 3vw, 1.75rem);
       font-weight: 800;
       color: var(--text);
-      margin-bottom: 0.5rem;
-      letter-spacing: -0.02em;
+      margin-bottom: 0.75rem;
+      letter-spacing: -0.025em;
     }
 
     .hero-big-number {
-      font-size: clamp(3.5rem, 8vw, 5.5rem);
+      font-family: var(--font-display);
+      font-size: clamp(4rem, 10vw, 6.5rem);
       font-weight: 900;
       line-height: 1;
-      letter-spacing: -0.04em;
-      font-family: var(--font-mono);
-      margin-bottom: 0.4rem;
+      letter-spacing: -0.05em;
+      margin-bottom: 0.5rem;
+      /* gradient applied inline via style attribute per section accent */
+    }
+
+    /* Gradient number helpers — applied inline but shared structure */
+    .hero-big-number-orange {
+      background: linear-gradient(135deg, var(--accent2), var(--accent5));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-big-number-green {
+      background: linear-gradient(135deg, var(--accent3), #7ee787);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
     .hero-label {
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.12em;
       color: var(--muted);
     }
 
     /* ===== Graph Visualisation Container ===== */
     #collab-graph-container {
       background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
+      border: 1px solid rgba(88,166,255,0.15);
+      border-radius: 16px;
       width: 100%;
-      height: 520px;
+      height: 560px;
       overflow: hidden;
       position: relative;
+      box-shadow: 0 0 40px rgba(88,166,255,0.05) inset;
     }
 
     #collab-graph {
@@ -549,14 +691,25 @@
     /* ===== Footer ===== */
     footer {
       text-align: center;
-      padding: 2rem 1rem;
+      padding: 3rem 1rem 2.5rem;
       border-top: 1px solid var(--border);
       color: var(--muted);
       font-size: 0.8125rem;
+      background: linear-gradient(0deg, rgba(88,166,255,0.03) 0%, transparent 100%);
     }
 
     footer a { color: var(--accent); text-decoration: none; }
     footer a:hover { text-decoration: underline; }
+
+    /* ===== Divider between hero and supporting stats ===== */
+    .section-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1rem 0 2.5rem;
+      opacity: 0.5;
+    }
+
+    /* .section-full grid-column handled inside .stats-grid @media block above */
   </style>
 </head>
 <body>
@@ -611,13 +764,13 @@
   <!-- ===== Main App ===== -->
   <main id="app">
 
-    <!-- Hero: Great Deleter -->
-    <section class="section" id="section-deleter" aria-label="Great Deleter hero stat">
+    <!-- ── Hero Stats (full width) ── -->
+    <section class="section section-hero" id="section-deleter" aria-label="Great Deleter hero stat">
       <div class="section-header">
         <h2>🗑 The Great Deleter</h2>
-        <span class="badge">Hero Stat</span>
+        <span class="badge badge-orange">Hero Stat</span>
       </div>
-      <div class="hero-card" id="deleter-content">
+      <div class="hero-card hero-card-orange" id="deleter-content">
         <div class="loading-placeholder">
           <div class="spinner-icon"></div>
           <div>Loading Great Deleter stats…</div>
@@ -625,13 +778,12 @@
       </div>
     </section>
 
-    <!-- Hero: Bug Slayer -->
-    <section class="section" id="section-bugslayer" aria-label="Bug Slayer hero stat">
+    <section class="section section-hero" id="section-bugslayer" aria-label="Bug Slayer hero stat">
       <div class="section-header">
         <h2>🐛 Bug Slayer</h2>
-        <span class="badge">Hero Stat</span>
+        <span class="badge badge-green">Hero Stat</span>
       </div>
-      <div class="hero-card" id="bugslayer-content">
+      <div class="hero-card hero-card-green" id="bugslayer-content">
         <div class="loading-placeholder">
           <div class="spinner-icon"></div>
           <div>Loading Bug Slayer stats…</div>
@@ -639,119 +791,126 @@
       </div>
     </section>
 
-    <!-- Top Contributors -->
-    <section class="section" id="section-contributors" aria-label="Top contributors">
-      <div class="section-header">
-        <h2>🏆 Top Contributors</h2>
-        <span class="badge">by PRs</span>
-      </div>
-      <div class="hero-card" id="contributors-content">
-        <div class="loading-placeholder">
-          <div class="spinner-icon"></div>
-          <div>Loading contributor stats…</div>
-        </div>
-      </div>
-    </section>
+    <hr class="section-divider" />
 
-    <!-- Top Reviewers -->
-    <section class="section" id="section-reviewers" aria-label="Top reviewers">
-      <div class="section-header">
-        <h2>👀 Top Reviewers</h2>
-        <span class="badge">by review count</span>
-      </div>
-      <div class="hero-card" id="reviewers-content">
-        <div class="loading-placeholder">
-          <div class="spinner-icon"></div>
-          <div>Loading reviewer stats…</div>
-        </div>
-      </div>
-    </section>
+    <!-- ── Supporting Stats (two-column grid at ≥900px) ── -->
+    <div class="stats-grid">
 
-    <!-- Hottest Files -->
-    <section class="section" id="section-files" aria-label="Hottest files">
-      <div class="section-header">
-        <h2>🔥 Hottest Files</h2>
-        <span class="badge">by PR touch count</span>
-      </div>
-      <div class="hero-card" id="files-content">
-        <div class="loading-placeholder">
-          <div class="spinner-icon"></div>
-          <div>Loading file stats…</div>
+      <!-- Top Contributors -->
+      <section class="section" id="section-contributors" aria-label="Top contributors">
+        <div class="section-header">
+          <h2>🏆 Top Contributors</h2>
+          <span class="badge">by PRs</span>
         </div>
-      </div>
-    </section>
-
-    <!-- Hottest Directories -->
-    <section class="section" id="section-dirs" aria-label="Hottest directories">
-      <div class="section-header">
-        <h2>📁 Hottest Directories</h2>
-        <span class="badge">by PR touch count</span>
-      </div>
-      <div class="hero-card" id="dirs-content">
-        <div class="loading-placeholder">
-          <div class="spinner-icon"></div>
-          <div>Loading directory stats…</div>
+        <div class="stat-card" id="contributors-content">
+          <div class="loading-placeholder">
+            <div class="spinner-icon"></div>
+            <div>Loading contributor stats…</div>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- PR Velocity -->
-    <section class="section" id="section-velocity" aria-label="PR velocity">
-      <div class="section-header">
-        <h2>⚡ PR Velocity</h2>
-        <span class="badge">avg hours to merge</span>
-      </div>
-      <div class="hero-card" id="velocity-content">
-        <div class="loading-placeholder">
-          <div class="spinner-icon"></div>
-          <div>Loading velocity stats…</div>
+      <!-- Top Reviewers -->
+      <section class="section" id="section-reviewers" aria-label="Top reviewers">
+        <div class="section-header">
+          <h2>👀 Top Reviewers</h2>
+          <span class="badge badge-purple">by review count</span>
         </div>
-      </div>
-    </section>
-
-    <!-- Collaboration Pairs -->
-    <section class="section" id="section-pairs" aria-label="Collaboration pairs">
-      <div class="section-header">
-        <h2>🤝 Collaboration Pairs</h2>
-        <span class="badge">author ↔ reviewer</span>
-      </div>
-      <div class="hero-card" id="pairs-content">
-        <div class="loading-placeholder">
-          <div class="spinner-icon"></div>
-          <div>Loading collaboration stats…</div>
+        <div class="stat-card" id="reviewers-content">
+          <div class="loading-placeholder">
+            <div class="spinner-icon"></div>
+            <div>Loading reviewer stats…</div>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- Label Leaderboard -->
-    <section class="section" id="section-labels" aria-label="Label leaderboard">
-      <div class="section-header">
-        <h2>🏷 Label Leaderboard</h2>
-        <span class="badge">most-used labels</span>
-      </div>
-      <div class="hero-card" id="labels-content">
-        <div class="loading-placeholder">
-          <div class="spinner-icon"></div>
-          <div>Loading label stats…</div>
+      <!-- Hottest Files -->
+      <section class="section" id="section-files" aria-label="Hottest files">
+        <div class="section-header">
+          <h2>🔥 Hottest Files</h2>
+          <span class="badge badge-orange">by PR touch count</span>
         </div>
-      </div>
-    </section>
+        <div class="stat-card" id="files-content">
+          <div class="loading-placeholder">
+            <div class="spinner-icon"></div>
+            <div>Loading file stats…</div>
+          </div>
+        </div>
+      </section>
 
-    <!-- Collaboration Graph (NVL) -->
-    <section class="section" id="section-graph" aria-label="Collaboration graph">
-      <div class="section-header">
-        <h2>🕸 Collaboration Graph</h2>
-        <span class="badge">interactive</span>
-      </div>
-      <div id="collab-graph-container">
-        <div id="collab-graph"></div>
-      </div>
-      <div id="collab-graph-legend">
-        <span><span class="legend-dot" style="background:#58a6ff"></span>Author</span>
-        <span><span class="legend-dot" style="background:#56d364"></span>Reviewer</span>
-        <span style="margin-left:auto;font-size:0.75rem">Pan &amp; zoom — hover node for login</span>
-      </div>
-    </section>
+      <!-- Hottest Directories -->
+      <section class="section" id="section-dirs" aria-label="Hottest directories">
+        <div class="section-header">
+          <h2>📁 Hottest Directories</h2>
+          <span class="badge badge-orange">by PR touch count</span>
+        </div>
+        <div class="stat-card" id="dirs-content">
+          <div class="loading-placeholder">
+            <div class="spinner-icon"></div>
+            <div>Loading directory stats…</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PR Velocity -->
+      <section class="section" id="section-velocity" aria-label="PR velocity">
+        <div class="section-header">
+          <h2>⚡ PR Velocity</h2>
+          <span class="badge badge-green">avg to merge</span>
+        </div>
+        <div class="stat-card" id="velocity-content">
+          <div class="loading-placeholder">
+            <div class="spinner-icon"></div>
+            <div>Loading velocity stats…</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Collaboration Pairs -->
+      <section class="section" id="section-pairs" aria-label="Collaboration pairs">
+        <div class="section-header">
+          <h2>🤝 Collaboration Pairs</h2>
+          <span class="badge">author ↔ reviewer</span>
+        </div>
+        <div class="stat-card" id="pairs-content">
+          <div class="loading-placeholder">
+            <div class="spinner-icon"></div>
+            <div>Loading collaboration stats…</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Label Leaderboard (full width) -->
+      <section class="section section-full" id="section-labels" aria-label="Label leaderboard">
+        <div class="section-header">
+          <h2>🏷 Label Leaderboard</h2>
+          <span class="badge badge-purple">most-used labels</span>
+        </div>
+        <div class="stat-card" id="labels-content">
+          <div class="loading-placeholder">
+            <div class="spinner-icon"></div>
+            <div>Loading label stats…</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Collaboration Graph (NVL) — full width -->
+      <section class="section section-full" id="section-graph" aria-label="Collaboration graph">
+        <div class="section-header">
+          <h2>🕸 Collaboration Graph</h2>
+          <span class="badge">interactive</span>
+        </div>
+        <div id="collab-graph-container">
+          <div id="collab-graph"></div>
+        </div>
+        <div id="collab-graph-legend">
+          <span><span class="legend-dot" style="background:#58a6ff"></span>Author</span>
+          <span><span class="legend-dot" style="background:#56d364"></span>Reviewer</span>
+          <span style="margin-left:auto;font-size:0.75rem">Pan &amp; zoom — hover node for login</span>
+        </div>
+      </section>
+
+    </div><!-- /stats-grid -->
 
     <!-- NVL hover tooltip (lives outside graph container so it's not clipped) -->
     <div id="nvl-tooltip" role="tooltip"></div>
@@ -1054,7 +1213,7 @@
         <div class="hero-number-block">
           <div class="hero-rank">#1</div>
           <div class="hero-login">${escapeHtml(top.login)}</div>
-          <div class="hero-big-number" style="color:var(--accent2)">${Number(top.totalDeleted).toLocaleString()}</div>
+          <div class="hero-big-number hero-big-number-orange">${Number(top.totalDeleted).toLocaleString()}</div>
           <div class="hero-label">lines deleted</div>
         </div>
         ${rest.length > 0 ? `
@@ -1115,7 +1274,7 @@
         <div class="hero-number-block">
           <div class="hero-rank">#1</div>
           <div class="hero-login">${escapeHtml(top.login)}</div>
-          <div class="hero-big-number" style="color:var(--accent3)">${Number(top.bugFixes).toLocaleString()}</div>
+          <div class="hero-big-number hero-big-number-green">${Number(top.bugFixes).toLocaleString()}</div>
           <div class="hero-label">bug PRs merged</div>
         </div>
         ${rest.length > 0 ? `

@@ -107,6 +107,15 @@ For HTML/JS: Open in browser and check console for errors.
 - Node/rel data: `id` required on both; nodes get `caption`, `size`, `color`; rels get `from`, `to`, `width`, `color`
 - Container must have explicit CSS height — `#collab-graph-container { height: 520px }` was already set from task-005
 
+## Wrapped visual design pattern (task-009)
+- Space Grotesk (Google Fonts, wght 700/800/900) used as `--font-display`; applied to `body`, headings, buttons
+- Hero big numbers use gradient text: `background: linear-gradient(...)` + `-webkit-background-clip: text` + `-webkit-text-fill-color: transparent`
+- Two-column layout: `.stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:0 2rem }` inside `@media (min-width:900px)`. Full-width override: `.section-full { grid-column: 1/-1 }` scoped inside the media query.
+- Hero card glow blob: `position:absolute; border-radius:50%; filter:blur(60px); opacity:0.06` using `--card-glow` CSS custom property per card variant
+- `.loading-placeholder` should NOT have its own background/border — let parent `.stat-card` or `.hero-card` provide the surface
+- Gold/silver/bronze rank: `tbody tr:nth-child(1) .rank { color:#ffd700 }`, etc.
+- Graph container height: 560px (increased from 520px) to look better in wide two-column layout
+
 ## Supporting stats pattern (task-007)
 - All 7 load functions use `safeQuery()` (not raw `runQuery()`) for spinner + error toast
 - PR velocity: `WHERE pr.state = 'MERGED'` excludes unmerged; `mergedCount >= 3` filter prevents outliers; display as `Xh` if < 24h else `Xd`

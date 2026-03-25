@@ -236,3 +236,37 @@ Key Decisions:
 - disableTelemetry: true set as required by acceptance criteria.
 
 Next Task: task-009 (Apply Wrapped-style visual design)
+================================================================================
+TASK-009: Apply Wrapped-style visual design
+Date: 2026-03-26T03:00:00Z
+================================================================================
+
+Summary:
+Applied full Spotify Wrapped-style visual treatment to docs/index.html.
+Added Space Grotesk display font, vibrant gradient hero numbers, radial glow
+header background, two-column responsive grid for supporting stats, gold/silver/
+bronze rank highlighting, and improved card/badge styling throughout.
+
+Files Changed:
+- docs/index.html (modified): Added Google Font (Space Grotesk 700/800/900),
+  --font-display and --accent5 CSS variables, enhanced header with radial
+  gradient + subtle pattern overlay, increased h1 to clamp(3rem,8vw,6rem),
+  section transition upgraded to cubic-bezier spring easing, hero-card accent
+  glow blobs (.hero-card-orange, .hero-card-green), hero big numbers use
+  gradient text classes (hero-big-number-orange/green), two-column .stats-grid
+  at ≥900px viewport, stat table top-3 rank gold/silver/bronze colours,
+  max-width expanded to 1440px, graph container increased to 560px height.
+
+Key Decisions:
+- Space Grotesk (Google Fonts) used as display font — weights 700/800/900 cover
+  all heading and hero number use cases; falls back to system-ui stack offline.
+- Two-column grid at ≥900px via CSS Grid + .stats-grid wrapper; hero sections
+  stay full-width above the grid; label leaderboard + graph span full width.
+- Hero big numbers use -webkit-background-clip gradient text (orange gradient for
+  Great Deleter, green gradient for Bug Slayer) instead of flat colour — more
+  visually impactful and screenshot-worthy.
+- Removed background/border from .loading-placeholder CSS — parent stat-card or
+  hero-card now provides the card surface, avoiding double-borders.
+- Graph container height increased from 520px to 560px to fill wider layout better.
+
+Next Task: task-010 (Deploy web app to GitHub Pages)
