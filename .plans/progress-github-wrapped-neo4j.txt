@@ -358,3 +358,28 @@ Key Decisions:
   this gracefully with fallback to unique_communities list
 
 Next Task: task-013 (Build MCP server with Neo4j query tools)
+================================================================================
+TASK-013: Build MCP server with Neo4j query tools
+Date: 2026-03-25T18:00:00Z
+================================================================================
+Summary: Created mcp_server/pyproject.toml and mcp_server/main.py as a
+standalone uv-managed FastAPI app. Implements all 6 MCP tools as GET endpoints
+at /tools/*. All Cypher queries are parameterised. Integration-tested against
+the real AuraDB instance — all 6 tools return correct data.
+
+Files Changed:
+- mcp_server/pyproject.toml (created — standalone uv project with neo4j-rust-ext, fastapi, uvicorn deps)
+- mcp_server/main.py (created — FastAPI app with 6 tool endpoints, Pydantic response models, lazy driver init)
+
+Key Decisions:
+- Lazy global driver (_driver) initialised on first request — avoids startup failure
+  when env vars not yet set during module import
+- deletions metric uses pr.deletions (INTEGER property on PullRequest node), not
+  TOUCHES relationship — cleaner and avoids requiring 06_files_touched.cypher import
+- get_community_summary returns 404 with helpful message when Person.community is
+  not populated (expected before task-011 notebook is run against AuraDB)
+- search_person uses toLower() CONTAINS for case-insensitive partial match — safe
+  because $q is a Cypher parameter, not string interpolation
+- All 6 tools verified with live AuraDB integration tests returning real data
+
+Next Task: task-015 (Embed PR titles and populate vector index)

@@ -224,7 +224,7 @@ tasks:
       get_collaboration_pairs, get_hottest_files, get_pr_velocity, search_person, and
       get_community_summary. AuraDB credentials loaded from environment variables. OpenAPI spec
       auto-generated at /openapi.json.
-    status: pending
+    status: completed
     dependencies:
       - task-003
       - task-012
@@ -236,7 +236,7 @@ tasks:
       - "All Cypher queries parameterised — no f-string or string concatenation with user input"
       - "/openapi.json returns valid OAS 3.0 spec"
       - "Server starts with uv run uvicorn and responds to requests locally"
-    completed_at: null
+    completed_at: "2026-03-25T18:00:00Z"
 
   - id: task-015
     title: "Embed PR titles and populate vector index"

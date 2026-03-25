@@ -153,3 +153,13 @@ This applies especially to NVL, neo4j-rust-ext, uv, and any other tool the user 
 - neo4j-viz 1.3.0 (current as of Mar 2026): `from neo4j_viz import Node, Relationship, VisualizationGraph`; render with `VisualizationGraph(nodes=nodes, relationships=rels).show()`
 - Majority-label team comparison: query `AUTHORED→PR→HAS_LABEL` with `l.name STARTS WITH 'team-'`; fallback to any label if 0 results; compute per-community accuracy as `majority_count / labelled_size`
 - NotebookEdit tool required for editing .ipynb files — `Edit` tool will error with "use NotebookEdit" if you try it on a notebook
+
+## MCP server pattern (task-013)
+- `mcp_server/` is a standalone uv project with its own `pyproject.toml` — run with `uv run uvicorn main:app` from inside `mcp_server/`
+- FastAPI auto-generates OAS 3.1.0 (not 3.0) at `/openapi.json` — still importable by Salesforce External Services
+- Lazy driver init: use a module-level `_driver = None` + getter function; avoids RuntimeError on import when env vars not set
+- `get_top_contributors` `deletions` metric: use `pr.deletions` (INTEGER property on PullRequest), not TOUCHES rel — avoids needing 06_files_touched.cypher imported
+- `get_community_summary` gracefully returns 404 with helpful message when `Person.community` is not set (before GDS notebook runs)
+- All Cypher uses `$param` syntax only — never f-strings; search_person's `$q` parameter passed directly to `toLower($q) CONTAINS` in Cypher
+- Python syntax check via uv: `uv run python -m py_compile main.py` (plain `python` may not exist on system path)
+- AuraDB REVIEWED relationship direction: `(reviewer:Person)-[:REVIEWED]->(pr:PullRequest)` — reviewer points TO the PR
