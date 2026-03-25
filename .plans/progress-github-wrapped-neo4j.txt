@@ -87,3 +87,34 @@ Key Decisions:
   06_files_touched.cypher to have been run — acceptable if skipped for Free tier
 
 Next Task: task-004 (Build Aura Dashboard JSON configuration)
+
+================================================================================
+TASK-004: Build Aura Dashboard JSON configuration
+Date: 2026-03-25T17:00:00Z
+================================================================================
+
+Summary:
+Created dashboards/github-wrapped.json as a NeoDash 2.4 format dashboard with
+10 panels across 3 pages (Overview, Hero Stats, Files & Labels). Covers all 5
+required chart types: bar charts for top contributors and reviewers, line chart
+for monthly PR merge rate, tables for hero stats (Great Deleter, Bug Slayer,
+collaboration pairs, PR velocity), horizontal bar for hottest files, and a pie
+chart for label distribution.
+
+Files Changed:
+- dashboards/github-wrapped.json (created): NeoDash 2.4 dashboard JSON with 3 pages
+  and 10 panels; all queries use LIMIT literals and Cypher patterns consistent with
+  the schema defined in import/schema.cypher
+
+Key Decisions:
+- Used NeoDash 2.4 format (version, uuid, id per report) sourced from the
+  neo4j-labs/neodash gallery/dashboards examples on GitHub
+- Used hardcoded LIMIT values (10 or 15) rather than $limit parameter — NeoDash
+  interprets $neodash_paramname convention for interactive params; bare $limit
+  would need a Select widget wired up and is unnecessary for this dashboard
+- Hottest files panel depends on TOUCHES relationships (06_files_touched.cypher);
+  noted in intro text that it requires TOUCHES rels to be imported
+- PR merge rate line chart uses two sequential WITH clauses: first extracts date(),
+  second groups by YearMonth string and counts rows — valid Cypher aggregation
+
+Next Task: task-005 (Build static web app scaffold with AuraDB credential config)

@@ -1,0 +1,202 @@
+{
+  "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "title": "GitHub Wrapped",
+  "version": "2.4",
+  "settings": {
+    "pagenumber": 0,
+    "editable": true,
+    "fullscreenEnabled": true,
+    "parameters": {
+      "neodash_repo_name": null
+    }
+  },
+  "pages": [
+    {
+      "title": "Overview",
+      "reports": [
+        {
+          "id": "11111111-1111-1111-1111-111111111101",
+          "title": "GitHub Wrapped",
+          "type": "text",
+          "query": "# GitHub Wrapped\n\nYour annual GitHub activity in Neo4j graph form.\n\nThis dashboard shows:\n- **Top Contributors** — who opened the most PRs\n- **Top Reviewers** — who reviewed the most PRs\n- **PR Merge Rate** — monthly PR merge trend\n- **Hero Stats** — Great Deleter (most lines deleted) and Bug Slayer (most bug-label PRs)\n- **Hottest Files** — most-touched files by PR count (requires TOUCHES rels imported)\n- **Label Leaderboard** — which labels appear most on PRs\n\nUse the tabs above to navigate between pages.",
+          "x": 0,
+          "y": 0,
+          "width": 12,
+          "height": 2,
+          "selection": {},
+          "settings": {}
+        },
+        {
+          "id": "11111111-1111-1111-1111-111111111102",
+          "title": "Top Contributors (PRs Opened)",
+          "type": "bar",
+          "query": "MATCH (p:Person)-[:AUTHORED]->(pr:PullRequest)\nRETURN p.login AS Contributor, count(pr) AS PRsOpened\nORDER BY PRsOpened DESC\nLIMIT 10\n",
+          "x": 0,
+          "y": 2,
+          "width": 6,
+          "height": 3,
+          "selection": {
+            "index": "Contributor",
+            "value": "PRsOpened",
+            "key": "(none)"
+          },
+          "settings": {
+            "marginBottom": 100,
+            "marginLeft": 60,
+            "barValues": true
+          }
+        },
+        {
+          "id": "11111111-1111-1111-1111-111111111103",
+          "title": "Top Reviewers (Review Count)",
+          "type": "bar",
+          "query": "MATCH (p:Person)-[:REVIEWED]->(pr:PullRequest)\nRETURN p.login AS Reviewer, count(pr) AS Reviews\nORDER BY Reviews DESC\nLIMIT 10\n",
+          "x": 6,
+          "y": 2,
+          "width": 6,
+          "height": 3,
+          "selection": {
+            "index": "Reviewer",
+            "value": "Reviews",
+            "key": "(none)"
+          },
+          "settings": {
+            "marginBottom": 100,
+            "marginLeft": 60,
+            "barValues": true
+          }
+        },
+        {
+          "id": "11111111-1111-1111-1111-111111111104",
+          "title": "PR Merge Rate Over Time (Monthly)",
+          "type": "line",
+          "query": "MATCH (pr:PullRequest)\nWHERE pr.state = 'MERGED' AND pr.mergedAt IS NOT NULL\nWITH date(pr.mergedAt) AS d\nWITH toString(d.year) + '-' + right('0' + toString(d.month), 2) AS YearMonth,\n     count(*) AS MergedPRs\nRETURN YearMonth, MergedPRs\nORDER BY YearMonth ASC\n",
+          "x": 0,
+          "y": 5,
+          "width": 12,
+          "height": 3,
+          "selection": {
+            "x": "YearMonth",
+            "value": ["MergedPRs"]
+          },
+          "settings": {
+            "curve": "cardinal",
+            "marginTop": 40,
+            "marginBottom": 80,
+            "marginLeft": 60
+          }
+        }
+      ]
+    },
+    {
+      "title": "Hero Stats",
+      "reports": [
+        {
+          "id": "22222222-2222-2222-2222-222222222201",
+          "title": "Great Deleter — Top Contributors by Lines Deleted",
+          "type": "table",
+          "query": "MATCH (p:Person)-[:AUTHORED]->(pr:PullRequest)\nRETURN p.login AS Contributor,\n       count(pr) AS PRsAuthored,\n       sum(pr.deletions) AS LinesDeleted,\n       sum(pr.additions) AS LinesAdded\nORDER BY LinesDeleted DESC\nLIMIT 10\n",
+          "x": 0,
+          "y": 0,
+          "width": 6,
+          "height": 4,
+          "selection": {},
+          "settings": {
+            "allowDownload": true
+          }
+        },
+        {
+          "id": "22222222-2222-2222-2222-222222222202",
+          "title": "Bug Slayer — Top Bug Fixers (Merged PRs with 'bug' label)",
+          "type": "table",
+          "query": "MATCH (p:Person)-[:AUTHORED]->(pr:PullRequest)-[:HAS_LABEL]->(l:Label {name: 'bug'})\nWHERE pr.state = 'MERGED'\nRETURN p.login AS Contributor, count(pr) AS BugsFixed\nORDER BY BugsFixed DESC\nLIMIT 10\n",
+          "x": 6,
+          "y": 0,
+          "width": 6,
+          "height": 4,
+          "selection": {},
+          "settings": {
+            "allowDownload": true
+          }
+        },
+        {
+          "id": "22222222-2222-2222-2222-222222222203",
+          "title": "Collaboration Pairs (Author + Reviewer on Same PRs)",
+          "type": "table",
+          "query": "MATCH (author:Person)-[:AUTHORED]->(pr:PullRequest)<-[:REVIEWED]-(reviewer:Person)\nWHERE author <> reviewer\nRETURN author.login AS Author, reviewer.login AS Reviewer, count(pr) AS SharedPRs\nORDER BY SharedPRs DESC\nLIMIT 20\n",
+          "x": 0,
+          "y": 4,
+          "width": 12,
+          "height": 3,
+          "selection": {},
+          "settings": {
+            "allowDownload": true
+          }
+        }
+      ]
+    },
+    {
+      "title": "Files & Labels",
+      "reports": [
+        {
+          "id": "33333333-3333-3333-3333-333333333301",
+          "title": "Hottest Files (by Distinct PRs Touching Them)",
+          "type": "bar",
+          "query": "MATCH (pr:PullRequest)-[:TOUCHES]->(f:File)\nRETURN f.path AS FilePath, count(DISTINCT pr) AS PRCount\nORDER BY PRCount DESC\nLIMIT 10\n",
+          "x": 0,
+          "y": 0,
+          "width": 6,
+          "height": 4,
+          "selection": {
+            "index": "FilePath",
+            "value": "PRCount",
+            "key": "(none)"
+          },
+          "settings": {
+            "marginBottom": 120,
+            "marginLeft": 60,
+            "layout": "horizontal",
+            "barValues": true
+          }
+        },
+        {
+          "id": "33333333-3333-3333-3333-333333333302",
+          "title": "Label Distribution (PRs per Label)",
+          "type": "pie",
+          "query": "MATCH (pr:PullRequest)-[:HAS_LABEL]->(l:Label)\nRETURN l.name AS Label, count(pr) AS PRCount\nORDER BY PRCount DESC\nLIMIT 15\n",
+          "x": 6,
+          "y": 0,
+          "width": 6,
+          "height": 4,
+          "selection": {
+            "index": "Label",
+            "value": "PRCount",
+            "key": "(none)"
+          },
+          "settings": {
+            "marginRight": 80,
+            "marginLeft": 80,
+            "marginTop": 40,
+            "marginBottom": 60
+          }
+        },
+        {
+          "id": "33333333-3333-3333-3333-333333333303",
+          "title": "PR Velocity — Avg Hours to Merge by Author (min 5 merged PRs)",
+          "type": "table",
+          "query": "MATCH (p:Person)-[:AUTHORED]->(pr:PullRequest)\nWHERE pr.state = 'MERGED'\n  AND pr.mergedAt IS NOT NULL\n  AND pr.createdAt IS NOT NULL\nWITH p.login AS Author,\n     avg(duration.inSeconds(pr.createdAt, pr.mergedAt).seconds / 3600.0) AS AvgHoursToMerge,\n     count(pr) AS MergedPRs\nWHERE MergedPRs >= 5\nRETURN Author,\n       round(AvgHoursToMerge, 1) AS AvgHoursToMerge,\n       MergedPRs\nORDER BY AvgHoursToMerge ASC\nLIMIT 10\n",
+          "x": 0,
+          "y": 4,
+          "width": 12,
+          "height": 3,
+          "selection": {},
+          "settings": {
+            "allowDownload": true
+          }
+        }
+      ]
+    }
+  ],
+  "extensions": ["core"],
+  "parameters": {}
+}

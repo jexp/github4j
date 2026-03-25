@@ -59,6 +59,20 @@ For HTML/JS: Open in browser and check console for errors.
 - For total elapsed hours: `duration.inSeconds(d1, d2).seconds / 3600.0`
 - `duration.inSeconds()` returns a Duration where `.seconds` IS total elapsed seconds
 
+## NeoDash Dashboard JSON Format
+
+- NeoDash 2.4 format: top-level `uuid`, `title`, `version`, `settings`, `pages`, `extensions`, `parameters`
+- Each report requires: `id` (UUID string), `title`, `type`, `query`, `x`, `y`, `width`, `height`, `selection`, `settings`
+- Grid is 12 columns wide; height is in row units
+- Chart types: `text`, `bar`, `line`, `pie`, `table`, `graph`, `value`, `select`, `map`, `json`, `iframe`
+- Bar chart `selection`: `{index: "ColA", value: "ColB", key: "(none)"}` — `index` is the category axis, `value` is the numeric axis
+- Line chart `selection`: `{x: "ColA", value: ["ColB"]}` — `value` must be an array
+- Pie chart `selection`: same as bar (`index`, `value`, `key`)
+- Interactive params use `$neodash_paramname` convention (requires a `select` report wired up); bare `$param` works only if set in top-level `parameters` object
+- Horizontal bar layout: set `settings.layout: "horizontal"` with larger `marginBottom` for long labels
+- Import via NeoDash UI: Load Dashboard button → paste/upload JSON file
+- Gallery examples at: https://github.com/neo4j-labs/neodash/tree/master/gallery/dashboards
+
 ## Cypher Pattern Scope Gotcha
 
 - `WHERE NOT ()-[:REL]->()` is a GLOBAL pattern check (always true/false for entire graph)

@@ -62,7 +62,7 @@ tasks:
       bar chart, PR merge rate over time (line chart), top reviewers, hottest files/directories,
       and label distribution pie/bar chart. Each panel references a saved Cypher query against
       the imported graph.
-    status: pending
+    status: completed
     dependencies:
       - task-003
     acceptance_criteria:
@@ -70,7 +70,7 @@ tasks:
       - "JSON imports into Aura Dashboards without errors"
       - "All 5 panels render with real data from AuraDB"
       - "Cypher queries in panels are parameterised"
-    completed_at: null
+    completed_at: "2026-03-25T17:00:00Z"
 
   - id: task-005
     title: "Build static web app scaffold with AuraDB credential config"
