@@ -1614,15 +1614,19 @@
           <div>Loading collaboration graph…</div>
         </div>`;
 
-      // Query: top collaboration pairs (author ↔ reviewer on same PR)
+      // Minimal topology query: only elementId + labels + caption (login), no heavy props.
+      // Embeddings and large text fields are excluded here; fetch on hover if needed.
+      // Pattern: n {.login, .url} — explicit allowlist keeps payload tiny.
       const cypher = `
         MATCH (author:Person)-[:AUTHORED]->(pr:PullRequest)<-[:REVIEWED]-(reviewer:Person)
         WHERE author <> reviewer
-        WITH author.login AS authorLogin, reviewer.login AS reviewerLogin,
-             COUNT(DISTINCT pr) AS interactions
+        WITH author, reviewer, COUNT(DISTINCT pr) AS interactions
         ORDER BY interactions DESC
         LIMIT 40
-        RETURN authorLogin, reviewerLogin, interactions
+        RETURN
+          { elementId: elementId(author),   labels: labels(author),   properties: author   {.login, .url} } AS authorNode,
+          { elementId: elementId(reviewer), labels: labels(reviewer), properties: reviewer {.login, .url} } AS reviewerNode,
+          interactions
       `;
 
       const rows = await safeQuery(cypher, {});
@@ -1642,7 +1646,9 @@
       const edgeList = [];
 
       rows.forEach(row => {
-        const { authorLogin, reviewerLogin, interactions } = row;
+        const { authorNode, reviewerNode, interactions } = row;
+        const authorLogin   = authorNode.properties.login;
+        const reviewerLogin = reviewerNode.properties.login;
 
         if (!personMap[authorLogin]) {
           personMap[authorLogin] = { id: authorLogin, login: authorLogin, role: 'author', size: 0 };
