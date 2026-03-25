@@ -42,7 +42,7 @@ def fmt_table(rows, max_col=40):
         info("(no results)")
         return
     cols = list(rows[0].keys())
-    widths = {c: max(len(c), max(len(str(r.get(c, "")))[:max_col] for r in rows)) for c in cols}
+    widths = {c: max(len(c), max(len(str(r.get(c, ""))[:max_col]) for r in rows)) for c in cols}
     sep = "  ".join(f"{'─'*widths[c]}" for c in cols)
     hdr = "  ".join(f"{c:<{widths[c]}}" for c in cols)
     print(f"  {BOLD}{hdr}{RESET}")
