@@ -266,7 +266,7 @@ tasks:
       Railway (using railway.toml / Procfile). Configure AuraDB credentials as environment
       variables in the hosting platform. Verify all 6 tools are reachable over the public
       HTTPS URL with a smoke-test curl or Claude tool call.
-    status: pending
+    status: completed
     dependencies:
       - task-013
     acceptance_criteria:
@@ -275,4 +275,4 @@ tasks:
       - "All 6 tools return correct data when called via the public URL"
       - "No AuraDB credentials in any committed file"
       - "Public MCP URL documented in README"
-    completed_at: null
+    completed_at: "2026-03-25T22:30:00Z"

@@ -164,6 +164,14 @@ This applies especially to NVL, neo4j-rust-ext, uv, and any other tool the user 
 - Python syntax check via uv: `uv run python -m py_compile main.py` (plain `python` may not exist on system path)
 - AuraDB REVIEWED relationship direction: `(reviewer:Person)-[:REVIEWED]->(pr:PullRequest)` — reviewer points TO the PR
 
+## MCP server deployment pattern (task-014)
+- Railway is preferred over Vercel for FastAPI + Neo4j: long-running process model supports persistent driver connection pool; Vercel serverless creates a new driver per request
+- Nixpacks does NOT pre-install uv — bootstrap with `pip install uv` in `[phases.install]` of `nixpacks.toml`, then `uv sync --frozen`
+- Railway deployment files: `railway.toml` (Nixpacks builder + start command), `Procfile` (fallback), `nixpacks.toml` (build phases), `.python-version` (pins Python version)
+- Vercel deployment needs `requirements.txt` — generate with `uv pip compile pyproject.toml --output-file requirements.txt`; `vercel.json` uses `@vercel/python` runtime
+- AuraDB credentials: NEVER in committed files; set via `railway variables set` or `vercel env add` in the hosting platform CLI
+- Smoke-test pattern after deploy: `curl /` (200 health check) → `curl /openapi.json | jq '.info.title'` → `curl /tools/get_top_contributors?metric=prs&limit=5`
+
 ## Embedding pattern (task-015)
 - `embed.py` is a standalone script at repo root; install embed extra with `uv sync --extra embed` (adds openai package)
 - openai v2.x (2.29.0) breaking API change from v1: use `OpenAI(api_key=...)` client object + `client.embeddings.create(input=texts, model=model)` — old `openai.Embedding.create()` does not exist in v2

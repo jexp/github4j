@@ -134,17 +134,63 @@ Visualised with `neo4j-viz`. Community IDs written back to `Person.community` in
 
 ## 🤖 MCP server (Claude integration)
 
+### Run locally
+
 ```bash
 cd mcp_server
 NEO4J_URI=... NEO4J_PASSWORD=... uv run uvicorn main:app --reload
 ```
 
-Add `http://localhost:8000/openapi.json` as a tool in Claude Projects and ask:
+### Deploy to Railway (recommended)
+
+1. Install the [Railway CLI](https://docs.railway.app/develop/cli): `npm i -g @railway/cli`
+2. Log in: `railway login`
+3. From `mcp_server/`:
+
+```bash
+cd mcp_server
+railway init          # creates a new project
+railway variables set NEO4J_URI=neo4j+s://xxxx.databases.neo4j.io
+railway variables set NEO4J_USERNAME=neo4j
+railway variables set NEO4J_PASSWORD=your-password
+railway variables set NEO4J_DATABASE=neo4j
+railway up            # deploys — get the public URL from the dashboard
+```
+
+Railway auto-detects `pyproject.toml` + `uv.lock` via Nixpacks and builds with uv.
+The `mcp_server/railway.toml`, `Procfile`, and `nixpacks.toml` are already configured.
+
+### Deploy to Vercel (alternative)
+
+```bash
+cd mcp_server
+npm i -g vercel
+vercel env add NEO4J_URI
+vercel env add NEO4J_USERNAME
+vercel env add NEO4J_PASSWORD
+vercel env add NEO4J_DATABASE
+vercel --prod
+```
+
+Configuration is in `mcp_server/vercel.json`.
+
+### Use with Claude
+
+Add `<your-public-url>/openapi.json` as a tool in Claude Projects and ask:
 
 - 💬 *"Who are the top 5 bug fixers?"*
 - 💬 *"Which file is touched by the most PRs?"*
 - 💬 *"What communities did Louvain detect?"*
 - 💬 *"Who should review my PR in the kernel team?"*
+
+Smoke-test the deployment:
+```bash
+curl https://<your-public-url>/
+curl https://<your-public-url>/openapi.json | jq '.info.title'
+curl "https://<your-public-url>/tools/get_top_contributors?metric=prs&limit=5"
+```
+
+> **Note:** No AuraDB credentials are stored in any committed file. All secrets are configured as environment variables in the hosting platform.
 
 ---
 
