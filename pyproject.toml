@@ -21,7 +21,5 @@ mcp = [
 ]
 
 [tool.uv]
+package = false
 dev-dependencies = []
-
-[project.scripts]
-seed = "seed:main"
