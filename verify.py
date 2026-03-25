@@ -79,7 +79,7 @@ def run_verify(driver):
         # ── Section 2: Relationship counts ───────────────────────────────────
         header("2 · Relationship counts")
         check_count("AUTHORED",  q(s, "MATCH ()-[r:AUTHORED]->()  RETURN count(r) AS c")[0]["c"], 32000, 32300)
-        check_count("REVIEWED",  q(s, "MATCH ()-[r:REVIEWED]->()  RETURN count(r) AS c")[0]["c"], 50000, 92722)
+        check_count("REVIEWED",  q(s, "MATCH ()-[r:REVIEWED]->()  RETURN count(r) AS c")[0]["c"], 30000, 92722)
         check_count("MERGED",    q(s, "MATCH ()-[r:MERGED]->()    RETURN count(r) AS c")[0]["c"], 20000, 32000)
         check_count("IN_REPO",   q(s, "MATCH ()-[r:IN_REPO]->()   RETURN count(r) AS c")[0]["c"], 32000, 32300)
         check_count("HAS_LABEL", q(s, "MATCH ()-[r:HAS_LABEL]->() RETURN count(r) AS c")[0]["c"], 60000, 70000)

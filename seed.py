@@ -59,6 +59,7 @@ def seed(driver):
         # Graph Type: enforces property types and key constraints automatically.
         # Requires Neo4j 2026.02+ / AuraDB with Cypher 25.
         s.run("""
+            CYPHER 25
             ALTER CURRENT GRAPH TYPE SET {
                 (p:Person => {
                     login :: STRING NOT NULL IS KEY,
@@ -84,8 +85,7 @@ def seed(driver):
                     deletions    :: INTEGER,
                     changedFiles :: INTEGER,
                     baseRefName  :: STRING,
-                    commentCount :: INTEGER,
-                    titleEmbedding :: LIST<FLOAT>
+                    commentCount :: INTEGER
                 }),
                 (f:File => {
                     fileId    :: STRING NOT NULL IS KEY,
@@ -102,20 +102,20 @@ def seed(driver):
                 (l:Label => {
                     name :: STRING NOT NULL IS KEY
                 }),
-                (:Person)-[:AUTHORED]->(:PullRequest),
+                (:Person)-[:AUTHORED =>]->(:PullRequest),
                 (:Person)-[:REVIEWED => {
                     state        :: STRING,
                     submittedAt  :: ZONED DATETIME,
                     commentCount :: INTEGER
                 }]->(:PullRequest),
-                (:Person)-[:MERGED]->(:PullRequest),
-                (:PullRequest)-[:IN_REPO]->(:Repo),
+                (:Person)-[:MERGED =>]->(:PullRequest),
+                (:PullRequest)-[:IN_REPO =>]->(:Repo),
                 (:PullRequest)-[:TOUCHES => {
                     additions :: INTEGER,
                     deletions :: INTEGER
                 }]->(:File),
-                (:File)-[:IN_DIR]->(:Directory),
-                (:PullRequest)-[:HAS_LABEL]->(:Label)
+                (:File)-[:IN_DIR =>]->(:Directory),
+                (:PullRequest)-[:HAS_LABEL =>]->(:Label)
             }
         """)
         print("  Graph Type defined ✓")

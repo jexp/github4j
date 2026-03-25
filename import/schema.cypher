@@ -11,6 +11,7 @@
 // 1. GRAPH TYPE — nodes, properties, types, key constraints
 // ============================================================
 
+CYPHER 25
 ALTER CURRENT GRAPH TYPE SET {
 
     // Person — identified by login
@@ -42,9 +43,9 @@ ALTER CURRENT GRAPH TYPE SET {
         deletions    :: INTEGER,
         changedFiles :: INTEGER,
         baseRefName  :: STRING,
-        commentCount :: INTEGER,
-        // populated separately by embed.py — optional
-        titleEmbedding :: LIST<FLOAT>
+        commentCount :: INTEGER
+        // titleEmbedding :: LIST<FLOAT> omitted — LIST<FLOAT> not supported
+        // in graph type constraints; the VECTOR index covers this property
     }),
 
     // File — identified by fileId
@@ -70,7 +71,7 @@ ALTER CURRENT GRAPH TYPE SET {
 
     // ── Relationships ────────────────────────────────────────
 
-    (:Person)-[:AUTHORED]->(:PullRequest),
+    (:Person)-[:AUTHORED =>]->(:PullRequest),
 
     (:Person)-[:REVIEWED => {
         state        :: STRING,
@@ -78,18 +79,18 @@ ALTER CURRENT GRAPH TYPE SET {
         commentCount :: INTEGER
     }]->(:PullRequest),
 
-    (:Person)-[:MERGED]->(:PullRequest),
+    (:Person)-[:MERGED =>]->(:PullRequest),
 
-    (:PullRequest)-[:IN_REPO]->(:Repo),
+    (:PullRequest)-[:IN_REPO =>]->(:Repo),
 
     (:PullRequest)-[:TOUCHES => {
         additions :: INTEGER,
         deletions :: INTEGER
     }]->(:File),
 
-    (:File)-[:IN_DIR]->(:Directory),
+    (:File)-[:IN_DIR =>]->(:Directory),
 
-    (:PullRequest)-[:HAS_LABEL]->(:Label)
+    (:PullRequest)-[:HAS_LABEL =>]->(:Label)
 }
 
 // ============================================================
