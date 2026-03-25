@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GitHub Wrapped — Neo4j</title>
+  <!-- Neo4j JS driver — uses Bolt over WebSocket, no CORS issues -->
+  <script src="https://unpkg.com/neo4j-driver@5/lib/browser/neo4j-web.min.js"></script>
   <style>
     /* ===== Reset & Base ===== */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -438,9 +440,9 @@
       <p>Enter your Neo4j AuraDB credentials. They are stored only in your browser's localStorage — never sent to any server other than your AuraDB instance.</p>
 
       <div class="field">
-        <label for="cfg-uri">AuraDB HTTP Endpoint</label>
-        <input type="url" id="cfg-uri" placeholder="https://xxxxxxxx.databases.neo4j.io" autocomplete="off" spellcheck="false" />
-        <div class="hint">e.g. <code>https://abc123.databases.neo4j.io</code> — no trailing slash</div>
+        <label for="cfg-uri">AuraDB Bolt URI</label>
+        <input type="text" id="cfg-uri" placeholder="neo4j+s://xxxxxxxx.databases.neo4j.io" autocomplete="off" spellcheck="false" />
+        <div class="hint">e.g. <code>neo4j+s://abc123.databases.neo4j.io</code> — from your AuraDB console</div>
       </div>
 
       <div class="field">
@@ -702,80 +704,61 @@
     }
 
     // ==========================================================================
-    // CORE: runQuery(cypher, params) → Promise<Array<Object>>
+    // CORE: Neo4j JS driver (Bolt/WebSocket — no CORS issues)
     // ==========================================================================
 
+    let _driver = null;
+
+    /** Create (or recreate) the driver from stored credentials. */
+    function initDriver(uri, user, pass) {
+      if (_driver) { _driver.close(); _driver = null; }
+      _driver = neo4j.driver(uri, neo4j.auth.basic(user, pass));
+    }
+
+    /** Convert Neo4j Integer objects to plain JS numbers. */
+    function toPlain(val) {
+      if (neo4j.isInt(val)) return val.toNumber();
+      if (val && typeof val === 'object' && !Array.isArray(val)) {
+        const out = {};
+        for (const k of Object.keys(val)) out[k] = toPlain(val[k]);
+        return out;
+      }
+      if (Array.isArray(val)) return val.map(toPlain);
+      return val;
+    }
+
     /**
-     * Execute a parameterised Cypher query against the AuraDB HTTP transaction API.
+     * Execute a parameterised Cypher query via the Neo4j Bolt driver.
+     * Uses WebSockets — bypasses CORS entirely.
      *
-     * @param {string} cypher   - Cypher statement (use $param placeholders — no interpolation)
-     * @param {Object} params   - Named parameters matching $param placeholders
+     * @param {string} cypher   - Cypher statement (use $param placeholders)
+     * @param {Object} params   - Named parameters
      * @returns {Promise<Array<Object>>}  Array of row objects keyed by column name
-     * @throws {Error}          With a user-visible message on network or AuraDB errors
      */
     async function runQuery(cypher, params = {}) {
-      const creds = loadCreds();
-      if (!creds) {
-        throw new Error('AuraDB credentials not configured. Click ⚙ Settings to connect.');
+      if (!_driver) {
+        const creds = loadCreds();
+        if (!creds) throw new Error('AuraDB credentials not configured. Click ⚙ Settings to connect.');
+        initDriver(creds.uri, creds.user, creds.pass);
       }
 
-      // AuraDB HTTP transaction endpoint
-      const endpoint = `${creds.uri}/db/neo4j/tx/commit`;
-
-      const body = JSON.stringify({
-        statements: [{ statement: cypher, parameters: params }]
-      });
-
-      const auth = btoa(`${creds.user}:${creds.pass}`);
-
-      let response;
+      const session = _driver.session({ database: 'neo4j' });
       try {
-        response = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json;charset=UTF-8',
-            'Authorization': `Basic ${auth}`
-          },
-          body
+        const result = await session.run(cypher, params);
+        return result.records.map(record => {
+          const obj = {};
+          record.keys.forEach(k => { obj[k] = toPlain(record.get(k)); });
+          return obj;
         });
       } catch (err) {
-        // Network-level error (DNS, CORS preflight blocked, etc.)
-        throw new Error(
-          `Cannot reach AuraDB. Check that the endpoint URL is correct and the AuraDB instance is running. (${err.message})`
-        );
-      }
-
-      if (!response.ok) {
-        if (response.status === 401) {
+        // Surface auth errors more clearly
+        if (err.code === 'Neo.ClientError.Security.Unauthorized') {
           throw new Error('AuraDB authentication failed. Check your username and password in ⚙ Settings.');
         }
-        throw new Error(`AuraDB HTTP error ${response.status}: ${response.statusText}`);
+        throw new Error(err.message || 'Query failed');
+      } finally {
+        await session.close();
       }
-
-      let payload;
-      try {
-        payload = await response.json();
-      } catch {
-        throw new Error('AuraDB returned an unexpected non-JSON response.');
-      }
-
-      // Neo4j HTTP API surfaces errors inside the JSON body even on 200 OK
-      if (payload.errors && payload.errors.length > 0) {
-        const firstError = payload.errors[0];
-        throw new Error(`Cypher error [${firstError.code}]: ${firstError.message}`);
-      }
-
-      // Transform columnar response into array of row objects
-      const result = payload.results[0];
-      if (!result) return [];
-
-      const { columns, data } = result;
-      return data.map(row => {
-        const obj = {};
-        columns.forEach((col, i) => { obj[col] = row.row[i]; });
-        return obj;
-      });
     }
 
     /**
@@ -815,6 +798,7 @@
       // Test connection with a lightweight query
       try {
         saveCreds(uri, user, pass);
+        initDriver(uri, user, pass);
         await runQuery('RETURN 1 AS ok');
         hideConfigPanel();
         loadDashboard();
@@ -1054,6 +1038,7 @@
     (function init() {
       const creds = loadCreds();
       if (creds) {
+        initDriver(creds.uri, creds.user, creds.pass);
         hideConfigPanel();
         loadDashboard();
       } else {
