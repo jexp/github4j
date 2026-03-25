@@ -163,3 +163,11 @@ This applies especially to NVL, neo4j-rust-ext, uv, and any other tool the user 
 - All Cypher uses `$param` syntax only — never f-strings; search_person's `$q` parameter passed directly to `toLower($q) CONTAINS` in Cypher
 - Python syntax check via uv: `uv run python -m py_compile main.py` (plain `python` may not exist on system path)
 - AuraDB REVIEWED relationship direction: `(reviewer:Person)-[:REVIEWED]->(pr:PullRequest)` — reviewer points TO the PR
+
+## Embedding pattern (task-015)
+- `embed.py` is a standalone script at repo root; install embed extra with `uv sync --extra embed` (adds openai package)
+- openai v2.x (2.29.0) breaking API change from v1: use `OpenAI(api_key=...)` client object + `client.embeddings.create(input=texts, model=model)` — old `openai.Embedding.create()` does not exist in v2
+- embed.py uses `--dry-run` flag to verify AuraDB connectivity + PR count without calling any embedding API — useful for CI
+- Vector index `pr_title_vector` is pre-created by schema.cypher / seed.py with `vector.dimensions: 1536, vector.similarity_function: 'cosine'` — matches text-embedding-3-small output exactly
+- Smoke-test after write: query `db.index.vector.queryNodes('pr_title_vector', 5, $vec)` using a freshly embedded node's vector; index may still be building (0 results is normal for a few seconds)
+- openai package added as `[project.optional-dependencies] embed = ["openai>=1.0"]` — keep separate from notebook/mcp extras

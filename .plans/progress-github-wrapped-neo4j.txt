@@ -383,3 +383,35 @@ Key Decisions:
 - All 6 tools verified with live AuraDB integration tests returning real data
 
 Next Task: task-015 (Embed PR titles and populate vector index)
+================================================================================
+TASK-015: Embed PR titles and populate vector index
+Date: 2026-03-25T22:00:00Z
+================================================================================
+Summary: Created embed.py — a standalone uv-managed script that reads
+PullRequest nodes missing titleEmbedding from AuraDB, calls the OpenAI
+text-embedding-3-small API (or sentence-transformers locally) in configurable
+batches, and writes Float[1536] vectors back to each PullRequest node. Activates
+the pr_title_vector VECTOR index defined in schema.cypher. Added `openai>=1.0`
+as a new `embed` extra in pyproject.toml.
+
+Files Changed:
+- embed.py (created): Full embedding pipeline with --model, --batch, --force,
+  --dry-run flags; _load_env_file() helper; vector index smoke-test after write;
+  similarity query example in docstring and stdout output.
+- pyproject.toml (modified): Added `embed = ["openai>=1.0"]` optional dependency.
+- uv.lock (modified): openai 2.29.0 + dependencies locked.
+
+Key Decisions:
+- Added `embed` as a separate optional dep group (not merged into notebook/mcp)
+  to keep the install footprint small for users who only want to run embed.py
+- openai package v2.x (2.29.0) — breaking change from v1.x: client is now OpenAI()
+  not openai.Embedding.create(); embed.py uses the v2 API pattern
+- `_load_env_file()` helper (same pattern as notebooks) avoids python-dotenv dep
+- Dry-run verified against live AuraDB: 32,252 PRs found without titleEmbedding
+- OPENAI_API_KEY checked inside embed_openai() — fails with clear message before
+  any network call if key is absent
+- Smoke-test after write: queries first embedded node's vector against the index
+  to confirm the index is live; handles slow index build with graceful warning
+
+Next Task: task-014 (Deploy MCP server to Vercel or Railway)
+

@@ -247,7 +247,7 @@ tasks:
       back to each PullRequest node as pr.titleEmbedding. This activates the pr_title_vector
       VECTOR index for semantic similarity search. Include a --model flag to switch providers
       and a --batch flag for throughput control.
-    status: pending
+    status: completed
     dependencies:
       - task-003
     acceptance_criteria:
@@ -257,7 +257,7 @@ tasks:
       - "Idempotent: skips PRs that already have titleEmbedding set (unless --force)"
       - "After run: CALL db.index.vector.queryNodes('pr_title_vector', 5, $vec) returns results"
       - "Example similarity query in README or script comments: find PRs semantically similar to 'fix authentication bug'"
-    completed_at: null
+    completed_at: "2026-03-25T22:00:00Z"
 
   - id: task-014
     title: "Deploy MCP server to Vercel or Railway"
