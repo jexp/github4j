@@ -97,6 +97,12 @@ For HTML/JS: Open in browser and check console for errors.
 - Bug Slayer: `toLower(l.name) = 'bug'` for case-insensitive label match; `COUNT(DISTINCT pr)` avoids double-counting
 - `loadDashboard()` calls `s.classList.add('visible')` on all sections immediately after login — hero stat fns fire in parallel via `loadGreatDeleter(); loadBugSlayer();` (not awaited)
 
+## CRITICAL: Library / Technology Choices
+
+**NEVER replace a library or technology the user has explicitly requested without asking first.**
+If a library proves difficult to load or use, investigate root cause and ask the user before switching to an alternative.
+This applies especially to NVL, neo4j-rust-ext, uv, and any other tool the user named in the original brief.
+
 ## NVL integration pattern (task-008)
 - @neo4j-nvl/base ships **ESM only** (dist/base.mjs, ~1MB) — no UMD/CDN script tag build
 - Use `<script type="importmap">` + `<script type="module">` bridge: expose `window.initNVLGraph` so classic scripts can call it
