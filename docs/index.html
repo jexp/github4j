@@ -26,6 +26,9 @@
         caption: n.login,
         size: 8 + (n.size / maxSize) * 24,
         color: n.role === 'author' ? '#58a6ff' : '#56d364',
+        // extra fields passed through to hit.data for tooltip
+        _role: n.role,
+        _interactions: n.size,
       }));
 
       const maxCount = Math.max(...edges.map(e => e.count), 1);
@@ -34,7 +37,7 @@
         from: e.from,
         to: e.to,
         caption: String(e.count),
-        width: 0.5 + (e.count / maxCount) * 2.5,
+        width: 0.25 + (e.count / maxCount) * 1.25,
         color: '#30363d',
       }));
 
@@ -53,9 +56,19 @@
       const tooltip = document.getElementById('nvl-tooltip');
       container.addEventListener('mousemove', (evt) => {
         const { nvlTargets } = nvl.getHits(evt);
-        const hit = nvlTargets && nvlTargets.nodes && nvlTargets.nodes[0];
-        if (hit) {
-          tooltip.textContent = hit.data.caption || hit.data.id;
+        const nodeHit = nvlTargets && nvlTargets.nodes && nvlTargets.nodes[0];
+        const relHit  = nvlTargets && nvlTargets.relationships && nvlTargets.relationships[0];
+        if (nodeHit) {
+          const d = nodeHit.data;
+          const role = d._role === 'author' ? 'Author' : 'Reviewer';
+          const interactions = d._interactions != null ? `${Number(d._interactions).toLocaleString()} PR interactions` : '';
+          tooltip.innerHTML = `<strong>${escapeHtml(d.caption || d.id)}</strong><br>${role}${interactions ? '<br>' + interactions : ''}`;
+          tooltip.style.display = 'block';
+          tooltip.style.left = (evt.clientX + 14) + 'px';
+          tooltip.style.top  = (evt.clientY + 14) + 'px';
+        } else if (relHit) {
+          const d = relHit.data;
+          tooltip.innerHTML = `${Number(d.caption).toLocaleString()} PRs reviewed together`;
           tooltip.style.display = 'block';
           tooltip.style.left = (evt.clientX + 14) + 'px';
           tooltip.style.top  = (evt.clientY + 14) + 'px';
@@ -670,12 +683,14 @@
       pointer-events: none;
       white-space: nowrap;
       box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      line-height: 1.5;
     }
 
     /* Legend for the NVL graph */
     #collab-graph-legend {
       display: flex;
-      gap: 1.25rem;
+      flex-wrap: wrap;
+      gap: 0.5rem 1.25rem;
       padding: 0.5rem 1rem;
       border-top: 1px solid var(--border);
       font-size: 0.8125rem;
@@ -692,6 +707,7 @@
       margin-right: 0.35rem;
       vertical-align: middle;
     }
+    .legend-sep { opacity: 0.35; }
 
     /* ===== Footer ===== */
     footer {
@@ -918,6 +934,10 @@
         <div id="collab-graph-legend">
           <span><span class="legend-dot" style="background:#58a6ff"></span>Author</span>
           <span><span class="legend-dot" style="background:#56d364"></span>Reviewer</span>
+          <span class="legend-sep">·</span>
+          <span>node size = total PR interactions</span>
+          <span class="legend-sep">·</span>
+          <span>edge number = PRs reviewed together</span>
           <span style="margin-left:auto;font-size:0.75rem">drag to pan · ⌘/Ctrl+scroll to zoom</span>
         </div>
       </section>
