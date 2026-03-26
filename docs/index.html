@@ -9,28 +9,22 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;800;900&display=swap" rel="stylesheet" />
 
-  <!-- NVL: import directly from esm.sh WITHOUT ?bundle — esm.sh rewrites all bare
-       specifiers (including @neo4j-nvl/layout-workers) to absolute esm.sh URLs
-       internally, so the browser resolves them without an importmap. -->
+  <!-- NVL + interaction handlers — pan/zoom live in @neo4j-nvl/interaction-handlers,
+       NOT in @neo4j-nvl/base. esm.sh resolves all transitive deps automatically. -->
   <script type="module">
     import { NVL } from 'https://esm.sh/@neo4j-nvl/base@1.1.0';
+    import { ZoomInteraction, PanInteraction } from 'https://esm.sh/@neo4j-nvl/interaction-handlers@1.1.0';
 
-    /**
-     * Build a force-directed NVL graph in #collab-graph.
-     * nodes: [{id, login, role, size}]  (role: 'author'|'reviewer')
-     * edges: [{id, from, to, count}]
-     */
     window.initNVLGraph = function initNVLGraph(nodes, edges) {
       const container = document.getElementById('collab-graph');
-      container.innerHTML = ''; // clear placeholder
+      container.innerHTML = '';
 
-      // Map node id → size for capping
       const maxSize = Math.max(...nodes.map(n => n.size), 1);
 
       const nvlNodes = nodes.map(n => ({
         id: n.id,
         caption: n.login,
-        size: 8 + (n.size / maxSize) * 24, // scale 8–32px
+        size: 8 + (n.size / maxSize) * 24,
         color: n.role === 'author' ? '#58a6ff' : '#56d364',
       }));
 
@@ -43,48 +37,32 @@
         color: '#30363d',
       }));
 
-      const tooltip = document.getElementById('nvl-tooltip');
-
+      // 4th arg = options, 5th arg = callbacks (separate in NVL 1.x API)
       const nvl = new NVL(
-        container,
-        nvlNodes,
-        nvlRels,
-        {
-          layout: 'forceDirected',
-          disableTelemetry: true,
-          initialZoom: 0.6,
-          minZoom: 0.1,
-          maxZoom: 4,
-          // NVL built-in mouse callbacks — more reliable than getHits()
-          mouseoverNode: (node, rawEvent) => {
-            tooltip.textContent = (node && (node.caption || node.id)) || '';
-            tooltip.style.display = 'block';
-            if (rawEvent) {
-              tooltip.style.left = (rawEvent.clientX + 14) + 'px';
-              tooltip.style.top  = (rawEvent.clientY + 14) + 'px';
-            }
-          },
-          mouseoutNode: () => {
-            tooltip.style.display = 'none';
-          },
-          onPan: () => { tooltip.style.display = 'none'; },
-          onZoom: () => { tooltip.style.display = 'none'; },
-        }
+        container, nvlNodes, nvlRels,
+        { initialZoom: 0.6, disableTelemetry: true },
+        { onLayoutDone: () => { try { nvl.fit(); } catch(_) {} } }
       );
 
-      // fit() centers nodes and triggers proper canvas sizing
-      try { nvl.fit(); } catch(_) {}
+      // Pan and zoom require interaction-handlers — not built into @neo4j-nvl/base
+      new ZoomInteraction(nvl);
+      new PanInteraction(nvl);
 
-      // Ctrl/Cmd + scroll to zoom; plain scroll lets the page scroll normally.
-      // NVL's own wheel handler runs after ours — we stopPropagation on plain scroll
-      // so NVL never sees it and the page scrolls instead.
-      container.addEventListener('wheel', (e) => {
-        if (e.ctrlKey || e.metaKey) {
-          e.preventDefault(); // hand full control to NVL for zoom
+      // Hover tooltip via getHits — returns { nvlTargets: { nodes: [], relationships: [] } }
+      const tooltip = document.getElementById('nvl-tooltip');
+      container.addEventListener('mousemove', (evt) => {
+        const { nvlTargets } = nvl.getHits(evt);
+        const hit = nvlTargets && nvlTargets.nodes && nvlTargets.nodes[0];
+        if (hit) {
+          tooltip.textContent = hit.data.caption || hit.data.id;
+          tooltip.style.display = 'block';
+          tooltip.style.left = (evt.clientX + 14) + 'px';
+          tooltip.style.top  = (evt.clientY + 14) + 'px';
         } else {
-          e.stopImmediatePropagation(); // block NVL zoom; page scrolls normally
+          tooltip.style.display = 'none';
         }
-      }, { passive: false });
+      });
+      container.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
 
       window._nvlInstance = nvl;
     };
@@ -920,6 +898,8 @@
     Built with <a href="https://neo4j.com/cloud/aura/" target="_blank" rel="noopener">Neo4j AuraDB</a>
     &amp; <a href="https://neo4j.com/developer/neo4j-visualization-library/" target="_blank" rel="noopener">NVL</a>.
     No credentials leave your browser.
+    &nbsp;·&nbsp;
+    <a href="https://github.com/jexp/github4j" target="_blank" rel="noopener">GitHub</a>
   </footer>
 
   <script>
