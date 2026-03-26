@@ -65,6 +65,8 @@ To host your own fork on GitHub Pages: Settings → Pages → Source: `docs/` fo
 
 ### 4. 📊 Load the NeoDash dashboard
 
+![NeoDash dashboard](dashboards/github4j-wrapped-dashboard.png)
+
 1. Go to [neodash.graphapp.io](https://neodash.graphapp.io) (or AuraDB → Apps → NeoDash)
 2. New dashboard → Import → paste `dashboards/github-wrapped.json`
 3. Connect to your AuraDB instance
