@@ -28,12 +28,13 @@
         color: n.role === 'author' ? '#58a6ff' : '#56d364',
       }));
 
+      const maxCount = Math.max(...edges.map(e => e.count), 1);
       const nvlRels = edges.map(e => ({
         id: e.id,
         from: e.from,
         to: e.to,
         caption: String(e.count),
-        width: 1 + Math.min(e.count / 5, 8),
+        width: 0.5 + (e.count / maxCount) * 2.5,
         color: '#30363d',
       }));
 
@@ -606,6 +607,33 @@
       color: var(--muted);
     }
 
+    /* ===== Graph Controls (slider) ===== */
+    #collab-graph-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 0 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+    #collab-graph-controls label {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      white-space: nowrap;
+    }
+    #collab-limit-value {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      min-width: 2.5ch;
+      text-align: right;
+    }
+    #collab-limit-slider {
+      width: 160px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
     /* ===== Graph Visualisation Container ===== */
     #collab-graph-container {
       background: var(--surface);
@@ -876,6 +904,13 @@
         <div class="section-header">
           <h2>🕸 Collaboration Graph</h2>
           <span class="badge">interactive</span>
+        </div>
+        <div id="collab-graph-controls">
+          <label for="collab-limit-slider">
+            <span>Connections</span>
+            <span id="collab-limit-value">150</span>
+          </label>
+          <input type="range" id="collab-limit-slider" min="25" max="300" step="25" value="150">
         </div>
         <div id="collab-graph-container">
           <div id="collab-graph"></div>
@@ -1582,7 +1617,8 @@
     // interactive force-directed graph using @neo4j-nvl/base via ESM import.
     // ==========================================================================
 
-    async function loadCollabGraph() {
+    async function loadCollabGraph(limit) {
+      limit = limit || 150;
       const container = document.getElementById('collab-graph');
 
       // Show loading state inside the container
@@ -1595,13 +1631,12 @@
 
       // Minimal topology query — generic pattern: labels + elementId + coalesced caption + rel type.
       // No properties beyond caption; embeddings and large text never hit the wire.
-      // On hover, fetch full node by elementId with n {.*, titleEmbedding: null}.
       const cypher = `
         MATCH (source:Person)-[:AUTHORED]->(pr:PullRequest)<-[:REVIEWED]-(target:Person)
         WHERE source <> target
         WITH source, target, COUNT(DISTINCT pr) AS interactions
         ORDER BY interactions DESC
-        LIMIT 40
+        LIMIT $limit
         RETURN
           labels(source)  AS sourceLabels,
           elementId(source) AS sourceId,
@@ -1613,7 +1648,7 @@
           interactions
       `;
 
-      const rows = await safeQuery(cypher, {});
+      const rows = await safeQuery(cypher, { limit });
 
       if (!rows || rows.length === 0) {
         container.innerHTML = `
@@ -1698,6 +1733,16 @@
 
       // Collaboration graph — NVL (task-008)
       loadCollabGraph();
+
+      // Slider: debounce reload so it doesn't fire on every tick
+      const slider = document.getElementById('collab-limit-slider');
+      const sliderLabel = document.getElementById('collab-limit-value');
+      let _sliderTimer = null;
+      slider.addEventListener('input', () => {
+        sliderLabel.textContent = slider.value;
+        clearTimeout(_sliderTimer);
+        _sliderTimer = setTimeout(() => loadCollabGraph(Number(slider.value)), 400);
+      });
     }
 
     // ==========================================================================
